@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\InstrumentoController;
+use App\Http\Controllers\Api\InstitucionController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -15,3 +16,13 @@ Route::get('/instrumentos/{id}', [InstrumentoController::class, 'show']);
 Route::put('/instrumentos/{id}', [InstrumentoController::class, 'update']);
 Route::patch('/instrumentos/{id}/estado', [InstrumentoController::class, 'cambiarEstado']);
 Route::get('/instrumentos/{id}/historial', [InstrumentoController::class, 'historial']);
+
+//rutas de instituciones
+// Rutas de instituciones
+Route::get('/instituciones', [InstitucionController::class, 'index']);
+
+Route::get('/instituciones/{id}', [InstitucionController::class, 'show']);
+
+Route::post('/instituciones', [InstitucionController::class, 'store']);
+
+Route::put('/instituciones/{id}', [InstitucionController::class, 'update']);
