@@ -59,3 +59,63 @@ button, input, select, textarea {
     background-color: #D6E2EE;
     font-weight: 600;
 }
+
+.headerPanelPrincipal img {
+    height: 80px;
+    width: auto;
+    max-width: 100%;
+}
+
+.titulo{
+    color: #29465E;
+    font-weight: bold;
+}
+
+.campoPanel{
+    border: 1px solid #b1cef5;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.contenedorCampos{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 900px){
+    .contenedorCampos{
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 500px){
+    .contenedorCampos{
+        grid-template-columns: 1fr;
+    }
+}
+
+.tituloCampo{
+    color: #4182d6;
+    font-size: 13px;
+}
+
+.contenedorPrincipal{
+    display: flex;
+    flex-direction: column;
+    height: 85%;
+    gap: 20px;
+}
+
+.campoConveniosRecientes{
+    flex: 1;
+    padding: 20px;
+    border: 1px solid #b1cef5;
+    border-radius: 10px;
+}
+
+.opcionesFormulario{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
