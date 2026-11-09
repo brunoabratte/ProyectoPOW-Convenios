@@ -14,6 +14,8 @@ class PersonaController extends Controller
     // Listar personas
     public function index()
     {
+        $this->authorize('viewAny', Persona::class);
+
         $personas = Persona::with('institucion')->get();
 
         return response()->json([
@@ -31,6 +33,8 @@ class PersonaController extends Controller
             'pasantiasComoEstudiante'
         ])->findOrFail($id);
 
+        $this->authorize('view', $persona);
+
         return response()->json([
             'mensaje' => 'Persona obtenida correctamente',
             'datos' => $persona
@@ -40,6 +44,8 @@ class PersonaController extends Controller
     // Registrar una persona
     public function store(Request $request)
     {
+        $this->authorize('create', Persona::class);
+
         $datos = $request->validate([
             'nombre' => 'required|string|max:100',
             'apellido' => 'required|string|max:100',
@@ -59,8 +65,7 @@ class PersonaController extends Controller
                 $nuevaPersona->id_persona,
                 [
                     'nombre' => $nuevaPersona->nombre,
-                    'apellido' => $nuevaPersona->apellido,
-                    'dni' => $nuevaPersona->dni
+                    'apellido' => $nuevaPersona->apellido
                 ]
             );
 
@@ -77,6 +82,8 @@ class PersonaController extends Controller
     public function update(Request $request, $id)
     {
         $persona = Persona::findOrFail($id);
+
+        $this->authorize('update', $persona);
 
         $datos = $request->validate([
             'nombre' => 'sometimes|required|string|max:100',

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Instrumento;
 use App\Models\InstrumentoRelacion;
 use App\Services\AuditoriaService;
 use Illuminate\Http\Request;
@@ -14,10 +15,16 @@ class InstrumentoRelacionController extends Controller
     // Listar relaciones
     public function index(Request $request)
     {
+        $this->authorize('viewAny', InstrumentoRelacion::class);
+
         $consulta = InstrumentoRelacion::with([
             'instrumentoOrigen',
             'instrumentoDestino'
-        ]);
+        ])->whereHas('instrumentoOrigen', function ($query) {
+            $query->visiblesPara(auth()->user());
+        })->whereHas('instrumentoDestino', function ($query) {
+            $query->visiblesPara(auth()->user());
+        });
 
         if ($request->filled('id_instrumento')) {
             $id = $request->id_instrumento;
@@ -42,7 +49,13 @@ class InstrumentoRelacionController extends Controller
         $relacion = InstrumentoRelacion::with([
             'instrumentoOrigen',
             'instrumentoDestino'
-        ])->findOrFail($id);
+        ])->whereHas('instrumentoOrigen', function ($query) {
+            $query->visiblesPara(auth()->user());
+        })->whereHas('instrumentoDestino', function ($query) {
+            $query->visiblesPara(auth()->user());
+        })->findOrFail($id);
+
+        $this->authorize('view', $relacion);
 
         return response()->json([
             'mensaje' => 'Relación obtenida correctamente',
@@ -53,6 +66,8 @@ class InstrumentoRelacionController extends Controller
     // Registrar una relación
     public function store(Request $request)
     {
+        $this->authorize('create', InstrumentoRelacion::class);
+
         $datos = $request->validate([
             'id_instrumento_origen' =>
                 'required|exists:instrumentos,id_instrumento',
@@ -72,6 +87,12 @@ class InstrumentoRelacionController extends Controller
 
             'descripcion' => 'nullable|string'
         ]);
+
+        Instrumento::visiblesPara(auth()->user())
+            ->findOrFail($datos['id_instrumento_origen']);
+
+        Instrumento::visiblesPara(auth()->user())
+            ->findOrFail($datos['id_instrumento_destino']);
 
         $relacion = DB::transaction(function () use ($datos) {
 
@@ -103,7 +124,12 @@ class InstrumentoRelacionController extends Controller
     // Actualizar una relación
     public function update(Request $request, $id)
     {
-        $relacion = InstrumentoRelacion::findOrFail($id);
+        $relacion = InstrumentoRelacion::with([
+            'instrumentoOrigen',
+            'instrumentoDestino'
+        ])->findOrFail($id);
+
+        $this->authorize('update', $relacion);
 
         $datos = $request->validate([
             'id_instrumento_origen' =>
@@ -137,6 +163,9 @@ class InstrumentoRelacionController extends Controller
                 'mensaje' => 'Un instrumento no puede relacionarse consigo mismo.'
             ], 422);
         }
+
+        Instrumento::visiblesPara(auth()->user())->findOrFail($origen);
+        Instrumento::visiblesPara(auth()->user())->findOrFail($destino);
 
         DB::transaction(function () use ($relacion, $datos) {
 

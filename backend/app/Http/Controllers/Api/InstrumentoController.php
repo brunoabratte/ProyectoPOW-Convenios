@@ -8,18 +8,24 @@ use App\Models\Estado;
 use App\Models\HistorialEstado;
 use App\Services\AuditoriaService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class InstrumentoController extends Controller
 {
     // Listar instrumentos
     public function index()
     {
-        $instrumentos = Instrumento::with([
-            'tipoInstrumento',
-            'unidad',
-            'estado'
-        ])->get();
+        $this->authorize('viewAny', Instrumento::class);
+
+        $instrumentos = Instrumento::visiblesPara(Auth::user())
+            ->with([
+                'tipoInstrumento',
+                'unidad',
+                'estado'
+            ])
+            ->get();
 
         return response()->json([
             'status' => 200,
@@ -31,14 +37,18 @@ class InstrumentoController extends Controller
     // Consultar un instrumento específico
     public function show($id)
     {
-        $instrumento = Instrumento::with([
-            'tipoInstrumento',
-            'unidad',
-            'estado',
-            'creador',
-            'partes',
-            'documentos'
-        ])->findOrFail($id);
+        $instrumento = Instrumento::visiblesPara(Auth::user())
+            ->with([
+                'tipoInstrumento',
+                'unidad',
+                'estado',
+                'creador',
+                'partes',
+                'documentos'
+            ])
+            ->findOrFail($id);
+
+        $this->authorize('view', $instrumento);
 
         return response()->json([
             'status' => 200,
@@ -50,7 +60,10 @@ class InstrumentoController extends Controller
     // Actualizar un instrumento
     public function update(Request $request, $id)
     {
-        $instrumento = Instrumento::findOrFail($id);
+        $instrumento = Instrumento::visiblesPara(Auth::user())
+            ->findOrFail($id);
+
+        $this->authorize('update', $instrumento);
 
         if ($instrumento->estado->nombre !== 'borrador') {
             return response()->json([
@@ -83,6 +96,17 @@ class InstrumentoController extends Controller
             'plazo_preaviso' => 'nullable|integer|min:0',
         ]);
 
+        // Un usuario con unidad asignada no puede mover
+        // instrumentos a otra unidad.
+        if (
+            array_key_exists('id_unidad', $datos)
+            && !Auth::user()->puedeAccederAUnidad((int) $datos['id_unidad'])
+        ) {
+            throw ValidationException::withMessages([
+                'id_unidad' => 'No tenés permisos para asignar el instrumento a esa unidad.'
+            ]);
+        }
+
         DB::transaction(function () use ($instrumento, $datos) {
             $instrumento->update($datos);
 
@@ -112,6 +136,8 @@ class InstrumentoController extends Controller
     // Registrar un instrumento
     public function store(Request $request)
     {
+        $this->authorize('create', Instrumento::class);
+
         $datos = $request->validate([
             'codigo' => 'required|string|max:50|unique:instrumentos,codigo',
             'titulo' => 'required|string|max:255',
@@ -136,15 +162,21 @@ class InstrumentoController extends Controller
             'plazo_preaviso' => 'nullable|integer|min:0',
         ]);
 
+        // Gestión solo puede crear instrumentos en su propia unidad.
+        if (!Auth::user()->puedeAccederAUnidad((int) $datos['id_unidad'])) {
+            throw ValidationException::withMessages([
+                'id_unidad' => 'No tenés permisos para crear instrumentos en esa unidad.'
+            ]);
+        }
+
         $estadoBorrador = Estado::where('nombre', 'borrador')->firstOrFail();
 
         $instrumento = DB::transaction(function () use ($datos, $estadoBorrador) {
-
             $nuevoInstrumento = Instrumento::create([
                 ...$datos,
                 'id_estado' => $estadoBorrador->id_estado,
                 'version' => 1,
-                'id_usuario_creador' => 2,
+                'id_usuario_creador' => Auth::id(),
             ]);
 
             AuditoriaService::registrar(
@@ -175,14 +207,16 @@ class InstrumentoController extends Controller
     // Cambiar el estado de un instrumento
     public function cambiarEstado(Request $request, $id)
     {
+        $instrumento = Instrumento::visiblesPara(Auth::user())
+            ->findOrFail($id);
+
         $datos = $request->validate([
             'id_estado_nuevo' => 'required|exists:estados,id_estado',
             'fundamento' => 'required|string|max:1000',
         ]);
 
-        $instrumento = Instrumento::findOrFail($id);
-
-        $estadoAnterior = $instrumento->id_estado;
+        $estadoActual = $instrumento->estado->nombre;
+        $estadoNuevo = Estado::findOrFail($datos['id_estado_nuevo']);
 
         $transicionesPermitidas = [
             'borrador' => ['revision'],
@@ -192,10 +226,6 @@ class InstrumentoController extends Controller
             'rescindido' => ['archivado'],
             'archivado' => [],
         ];
-
-        $estadoActual = $instrumento->estado->nombre;
-
-        $estadoNuevo = Estado::findOrFail($datos['id_estado_nuevo']);
 
         if (!in_array(
             $estadoNuevo->nombre,
@@ -207,14 +237,39 @@ class InstrumentoController extends Controller
             ], 422);
         }
 
-        if ($estadoAnterior == $datos['id_estado_nuevo']) {
-            return response()->json([
-                'status' => 422,
-                'mensaje' => 'El instrumento ya se encuentra en ese estado.'
-            ], 422);
+        // Gestión puede enviar un borrador a revisión.
+        if ($estadoActual === 'borrador' && $estadoNuevo->nombre === 'revision') {
+            $this->authorize('update', $instrumento);
+        }
+        // Revisión puede aprobar o devolver para corrección.
+        // Revisión puede aprobar o devolver para corrección.
+        elseif (
+            $estadoActual === 'revision'
+            && in_array($estadoNuevo->nombre, ['borrador', 'aprobado'])
+        ) {
+            $this->authorize('gestionarRevision', $instrumento);
+
+            // Para aprobar, el instrumento debe tener al menos dos partes.
+            if ($estadoNuevo->nombre === 'aprobado') {
+                $cantidadPartes = $instrumento->partes()->count();
+
+                if ($cantidadPartes < 2) {
+                    throw ValidationException::withMessages([
+                        'partes' => [
+                            'No se puede aprobar el instrumento porque debe tener al menos dos partes registradas.'
+                        ]
+                    ]);
+                }
+            }
+        }
+        // Las demás transiciones todavía no tienen un permiso
+        // definido en la matriz de roles.
+        else {
+            abort(403, 'Tu rol no tiene permisos definidos para realizar este cambio de estado.');
         }
 
-        $usuarioId = 2;
+        $estadoAnterior = $instrumento->id_estado;
+        $usuarioId = Auth::id();
 
         DB::transaction(function () use (
             $instrumento,
@@ -260,7 +315,10 @@ class InstrumentoController extends Controller
     // Consultar historial de estados de un instrumento
     public function historial($id)
     {
-        $instrumento = Instrumento::findOrFail($id);
+        $instrumento = Instrumento::visiblesPara(Auth::user())
+            ->findOrFail($id);
+
+        $this->authorize('view', $instrumento);
 
         $historial = $instrumento->historialEstados()
             ->with([

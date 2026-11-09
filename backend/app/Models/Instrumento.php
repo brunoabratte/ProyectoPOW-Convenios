@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+
 class Instrumento extends BaseModel
 {
     protected $table = 'instrumentos';
@@ -147,4 +149,17 @@ class Instrumento extends BaseModel
             'id_instrumento'
         );
     }
+
+    
+    public function scopeVisiblesPara(Builder $query, User $usuario): Builder
+    {
+        // Si el usuario tiene alcance global, puede consultar todos.
+        if ($usuario->tieneAlcanceGlobal()) {
+            return $query;
+        }
+
+        // Si tiene unidad asignada, solo consulta instrumentos de esa unidad.
+        return $query->where('id_unidad', $usuario->id_unidad);
+    }
+
 }

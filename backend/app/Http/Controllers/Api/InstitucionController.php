@@ -13,6 +13,8 @@ class InstitucionController extends Controller
     // Listar instituciones
     public function index()
     {
+        $this->authorize('viewAny', Institucion::class);
+
         $instituciones = Institucion::withCount([
             'personas',
             'partes'
@@ -33,6 +35,8 @@ class InstitucionController extends Controller
             'partes.instrumento'
         ])->findOrFail($id);
 
+        $this->authorize('view', $institucion);
+
         return response()->json([
             'status' => 200,
             'mensaje' => 'Institución obtenida correctamente',
@@ -43,6 +47,8 @@ class InstitucionController extends Controller
     // Registrar una institución
     public function store(Request $request)
     {
+        $this->authorize('create', Institucion::class);
+
         $datos = $request->validate([
             'nombre' => 'required|string|max:255',
             'tipo_institucion' => 'required|string|max:100',
@@ -82,6 +88,8 @@ class InstitucionController extends Controller
     public function update(Request $request, $id)
     {
         $institucion = Institucion::findOrFail($id);
+
+        $this->authorize('update', $institucion);
 
         $datos = $request->validate([
             'nombre' => 'sometimes|required|string|max:255',
