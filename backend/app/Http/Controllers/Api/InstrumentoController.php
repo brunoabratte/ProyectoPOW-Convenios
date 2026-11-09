@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Instrumento;
 use App\Models\Estado;
-use Illuminate\Http\Request;
 use App\Models\HistorialEstado;
+use App\Services\AuditoriaService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class InstrumentoController extends Controller
@@ -45,13 +46,12 @@ class InstrumentoController extends Controller
             'data' => $instrumento
         ]);
     }
-        
+
     // Actualizar un instrumento
     public function update(Request $request, $id)
     {
         $instrumento = Instrumento::findOrFail($id);
 
-        // Solo se pueden modificar instrumentos en borrador
         if ($instrumento->estado->nombre !== 'borrador') {
             return response()->json([
                 'status' => 403,
@@ -83,7 +83,20 @@ class InstrumentoController extends Controller
             'plazo_preaviso' => 'nullable|integer|min:0',
         ]);
 
-        $instrumento->update($datos);
+        DB::transaction(function () use ($instrumento, $datos) {
+            $instrumento->update($datos);
+
+            AuditoriaService::registrar(
+                'actualizar',
+                'instrumentos',
+                $instrumento->id_instrumento,
+                [
+                    'campos_modificados' => array_keys($datos),
+                    'codigo' => $instrumento->codigo,
+                    'titulo' => $instrumento->titulo
+                ]
+            );
+        });
 
         return response()->json([
             'status' => 200,
@@ -99,7 +112,6 @@ class InstrumentoController extends Controller
     // Registrar un instrumento
     public function store(Request $request)
     {
-        
         $datos = $request->validate([
             'codigo' => 'required|string|max:50|unique:instrumentos,codigo',
             'titulo' => 'required|string|max:255',
@@ -126,12 +138,28 @@ class InstrumentoController extends Controller
 
         $estadoBorrador = Estado::where('nombre', 'borrador')->firstOrFail();
 
-        $instrumento = Instrumento::create([
-            ...$datos,
-            'id_estado' => $estadoBorrador->id_estado,
-            'version' => 1,
-            'id_usuario_creador' => 2,
-        ]);
+        $instrumento = DB::transaction(function () use ($datos, $estadoBorrador) {
+
+            $nuevoInstrumento = Instrumento::create([
+                ...$datos,
+                'id_estado' => $estadoBorrador->id_estado,
+                'version' => 1,
+                'id_usuario_creador' => 2,
+            ]);
+
+            AuditoriaService::registrar(
+                'crear',
+                'instrumentos',
+                $nuevoInstrumento->id_instrumento,
+                [
+                    'codigo' => $nuevoInstrumento->codigo,
+                    'titulo' => $nuevoInstrumento->titulo,
+                    'estado_inicial' => 'borrador'
+                ]
+            );
+
+            return $nuevoInstrumento;
+        });
 
         return response()->json([
             'status' => 201,
@@ -186,10 +214,16 @@ class InstrumentoController extends Controller
             ], 422);
         }
 
-        $usuarioId = 2; // Temporal, hasta implementar autenticación.
+        $usuarioId = 2;
 
-        DB::transaction(function () use ($instrumento, $datos, $estadoAnterior, $usuarioId) {
-
+        DB::transaction(function () use (
+            $instrumento,
+            $datos,
+            $estadoAnterior,
+            $estadoNuevo,
+            $estadoActual,
+            $usuarioId
+        ) {
             $instrumento->update([
                 'id_estado' => $datos['id_estado_nuevo']
             ]);
@@ -201,6 +235,18 @@ class InstrumentoController extends Controller
                 'id_usuario' => $usuarioId,
                 'fundamento' => $datos['fundamento'],
             ]);
+
+            AuditoriaService::registrar(
+                'cambiar_estado',
+                'instrumentos',
+                $instrumento->id_instrumento,
+                [
+                    'estado_anterior' => $estadoActual,
+                    'estado_nuevo' => $estadoNuevo->nombre,
+                    'fundamento' => $datos['fundamento']
+                ],
+                $usuarioId
+            );
         });
 
         return response()->json([
