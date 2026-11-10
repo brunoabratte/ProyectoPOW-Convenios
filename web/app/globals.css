@@ -119,3 +119,18 @@ button, input, select, textarea {
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
 }
+
+#ventanaRegistro {
+    width: 80%;
+    max-width: 900px;
+    max-height: 85vh;
+    margin: auto;
+    padding: 30px;
+    border: none;
+    border-radius: 12px;
+    overflow-y: auto;
+}
+
+#ventanaRegistro::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
