@@ -24,7 +24,7 @@ export default function ConveniosPage(){
                         + Nuevo convenio
                     </button>
                 </div>
-                <dialog id="ventanaRegistro">
+                <dialog id="ventanaRegistro" className="ventanaRegistro">
                         <div className="d-flex justify-content-between align-items-center mb-3">
                             <h3 className="titulo h3">Formulario de registro de un nuevo convenio</h3>
                             <button type="button" className="btn btn-danger" onClick={cerrarModal}>Cerrar</button>

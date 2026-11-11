@@ -120,7 +120,7 @@ button, input, select, textarea {
     gap: 15px;
 }
 
-#ventanaRegistro {
+.ventanaRegistro {
     width: 80%;
     max-width: 900px;
     max-height: 85vh;
@@ -131,6 +131,6 @@ button, input, select, textarea {
     overflow-y: auto;
 }
 
-#ventanaRegistro::backdrop {
+.ventanaRegistro::backdrop {
     background-color: rgba(0, 0, 0, 0.5);
 }
