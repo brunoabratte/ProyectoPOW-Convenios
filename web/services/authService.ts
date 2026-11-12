@@ -28,3 +28,10 @@ export async function iniciarSesion(email: string, password: string){
         window.location.replace("/panel");
     }
 }
+
+export function verificarSesion(){
+    let token = localStorage.getItem("token");
+    if (token == null){
+        window.location.replace("/login");
+    }
+}

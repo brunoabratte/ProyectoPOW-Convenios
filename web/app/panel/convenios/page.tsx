@@ -1,14 +1,62 @@
 "use client";
 
+import { obtenerConvenios } from "@/services/conveniosService";
+import { verificarSesion } from "@/services/authService";
+import { useEffect } from "react";
+
 export default function ConveniosPage(){
+    useEffect(() => {
+        verificarSesion();
+    }, []);
+
     function abrirModal() {
-    const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
-    modal.showModal();
+        const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
+        modal.showModal();
     }
 
     function cerrarModal() {
-    const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
-    modal.close();
+        const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
+        modal.close();
+    }
+
+    async function listarConvenios(){
+        let resultados = document.getElementById("resultados");
+        if (resultados != null)
+            resultados.innerHTML = ""
+
+        let datos = await obtenerConvenios();
+        if (datos.status == 200){
+            let tabla = document.createElement("table");
+            tabla.innerHTML = "";
+            tabla.innerHTML = `
+            <thead>
+                <tr>
+                    <th>C&oacute;digo</th>
+                    <th>T&iacute;tulo</th>
+                    <th>Tipo</th>
+                    <th>Unidad</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            `;
+            for (let i = 0; i < datos.data.length; i++){
+                tabla.innerHTML += `
+                <tbody>
+                    <tr>
+                        <td>${datos.data[i].codigo}</td>
+                        <td>${datos.data[i].titulo}</td>
+                        <td>${datos.data[i].tipoInstrumento}</td>
+                        <td>${datos.data[i].unidad}</td>
+                        <td>${datos.data[i].estado}</td>
+                        <td><button class="btn btn-info">VER DETALLES</button></td>
+                    </tr>
+                </tbody>
+                `
+            }
+            resultados?.appendChild(tabla);
+        }
+
     }
     return(
         <div>
@@ -138,9 +186,9 @@ export default function ConveniosPage(){
                             </select>
                         </div>
                     </form>
-                    <button className="btn btn-secondary">Buscar</button>
+                    <button className="btn btn-secondary" onClick={listarConvenios}>Buscar</button>
                 </div>
-                <div className="resultados pt-5">
+                <div className="resultados pt-5" id="resultados">
                 </div>
             </section>
         </div>
