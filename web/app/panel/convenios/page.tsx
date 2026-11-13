@@ -1,6 +1,6 @@
 "use client";
 
-import { obtenerConvenioEspecifico, obtenerConvenios } from "@/services/conveniosService";
+import { obtenerConvenioEspecifico, obtenerConvenios, registrar, registrarParte, subirDocumento } from "@/services/conveniosService";
 import { verificarSesion } from "@/services/authService";
 import { useEffect } from "react";
 
@@ -84,7 +84,118 @@ export default function ConveniosPage(){
         modal.close();
     }
 
+    function valor(id: string) {
+    let elemento = document.getElementById(id) as HTMLInputElement | null;
+    return elemento == null ? "" : elemento.value.trim();
+}
+
     async function registrarConvenio(){
+    // 1. Validaciones antes de enviar nada
+    if (valor("codigo") === "" || valor("titulo") === "" || valor("tipo") === "" || valor("unidad-responsable") === ""){
+        alert("Completá código, título, tipo de instrumento y unidad responsable.");
+        return;
+    }
+
+    if (valor("primera-institucion") !== "" && valor("primera-institucion") === valor("segunda-institucion")){
+        alert("Las dos partes deben ser instituciones distintas.");
+        return;
+    }
+
+    let inputArchivo = document.getElementById("archivo") as HTMLInputElement;
+    let archivo = inputArchivo.files?.[0];
+
+    if (archivo){
+        if (archivo.size > 20 * 1024 * 1024){
+            alert("El archivo no puede superar los 20 MB.");
+            return;
+        }
+        if (valor("tipo_documento") === "tipo-documento"){
+            alert("Seleccioná el tipo de documento.");
+            return;
+        }
+    }
+
+    // 2. Datos del convenio
+    let datos = new FormData();
+    datos.append("codigo", valor("codigo"));
+    datos.append("titulo", valor("titulo"));
+    datos.append("id_tipo_instrumento", valor("tipo"));
+    datos.append("id_unidad", valor("unidad-responsable"));
+
+    // [nombre que espera la API, id del campo en el formulario]
+    let opcionales = [
+        ["objeto", "objeto"],
+        ["alcance", "alcance"],
+        ["obligaciones", "obligaciones"],
+        ["rescision", "condiciones-rescision"],
+        ["marco_legal", "marco-legal"],
+        ["resolucion", "resolucion"],
+        ["expediente_referencia", "expediente"],
+        ["condiciones_renovacion", "condiciones-renovacion"],
+        ["confidencialidad", "confidencialidad"],
+        ["notas", "notas-adicionales"],
+        ["fecha_firma", "fecha-firma"],
+        ["fecha_inicio", "fecha-inicio"],
+        ["fecha_vencimiento", "fecha-vencimiento"],
+        ["plazo_preaviso", "plazo-preaviso"]
+    ];
+
+    for (let i = 0; i < opcionales.length; i++){
+        let texto = valor(opcionales[i][1]);
+        if (texto !== "")
+            datos.append(opcionales[i][0], texto);
+    }
+
+    let respuesta = await registrar(datos);
+
+    // Si no vino "data", la API rechazó el registro (validación, permisos, etc.)
+    if (respuesta.data == null){
+        let mensaje = respuesta.errors
+            ? Object.values(respuesta.errors).join("\n")
+            : (respuesta.mensaje ?? respuesta.message ?? "No se pudo registrar el convenio.");
+        alert(mensaje);
+        return;
+    }
+
+    let idInstrumento = String(respuesta.data.id_instrumento);
+    let avisos = "";
+
+    // 3. Partes (instituciones firmantes)
+    let instituciones = [valor("primera-institucion"), valor("segunda-institucion")];
+
+    for (let i = 0; i < instituciones.length; i++){
+        if (instituciones[i] === "")
+            continue;
+
+        let parte = new FormData();
+        parte.append("id_instrumento", idInstrumento);
+        parte.append("id_institucion", instituciones[i]);
+        parte.append("caracter_parte", i === 0 ? "Primera parte" : "Segunda parte");
+
+        let resParte = await registrarParte(parte);
+        if (resParte.datos == null)
+            avisos += "\n- No se pudo registrar la parte " + (i + 1);
+    }
+
+    // 4. Documento
+    if (archivo){
+        let documento = new FormData();
+        documento.append("id_instrumento", idInstrumento);
+        documento.append("tipo_documento", valor("tipo_documento"));
+        documento.append("archivo", archivo);
+
+        let resDocumento = await subirDocumento(documento);
+        if (resDocumento.documento == null)
+            avisos += "\n- No se pudo subir el documento";
+    }
+
+    if (avisos === "")
+        alert("Convenio registrado correctamente como borrador.");
+    else
+        alert("El convenio se registró como borrador, pero:" + avisos);
+
+    cerrarModal();
+    listarConvenios();
     }
 
     async function listarConvenios(){
@@ -213,18 +324,19 @@ export default function ConveniosPage(){
                         <h4 className="titulo h4">1. Informacion general</h4>
 
                         <form className="d-flex flex-column gap-3 mb-5">
+                            <input type="text" name="codigo" id="codigo" className="form-control" placeholder="Código único"/>
                             <input type="text" name="titulo" id="titulo" className="form-control" placeholder="Título"/>
                             <select id="tipo" className="form-select" defaultValue="">
                                 <option value="">Tipo de instrumento</option>
-                                <option value="convenio-marco-colaboracion">Convenio marco de colaboracion</option>
-                                <option value="convenio-especifico-colaboracion">Convenio espec&iacute;fico de colaboracion</option>
-                                <option value="convenio-marco-pasantia">Convenio marco de pasant&iacute;a</option>
-                                <option value="convenio-especifico-pasantia">Convenio espec&iacute;fico de pasant&iacute;a</option>
-                                <option value="adenda">Adenda</option>
+                                <option value="7">Convenio marco de colaboracion</option>
+                                <option value="8">Convenio espec&iacute;fico de colaboracion</option>
+                                <option value="9">Convenio marco de pasant&iacute;a</option>
+                                <option value="10">Convenio espec&iacute;fico de pasant&iacute;a</option>
+                                <option value="4">Adenda</option>
                             </select>
-                            <select id="unidad-responsable" name="unidad" className="form-select" defaultValue="Facultad de ingeniería">
-                                <option value="Facultad de ingeniería">Facultad de ingeniería</option>
-                                <option value="Rectorado">Rectorado</option>
+                            <select id="unidad-responsable" name="unidad" className="form-select" defaultValue="1">
+                                <option value="1">Facultad de ingeniería</option>
+                                <option value="2">Rectorado</option>
                             </select>
                             <textarea id="objeto" name="objeto" className="form-control" rows={4} placeholder="Ingrese el objeto del convenio..."></textarea>
                             <textarea id="alcance" name="alcance" className="form-control" rows={4} placeholder="Ingrese el alcance del convenio..."/>
@@ -252,19 +364,23 @@ export default function ConveniosPage(){
                             <input type="date" name="fecha_inicio" id="fecha-inicio"/>
                             <label htmlFor="fecha-vencimiento" className="form-label">Fecha de vencimiento</label>
                             <input type="date" name="fecha_vencimiento" id="fecha-vencimiento"/>
-                            <label htmlFor="fecha-preaviso" className="form-label">Plazo de preaviso</label>
-                            <input type="date" name="plazo_preaviso" id="plazo-preaviso"/>
+                            <label htmlFor="plazo-preaviso" className="form-label">Plazo de preaviso (en días)</label>
+                            <input type="number" min={0} name="plazo_preaviso" id="plazo-preaviso"/>
                         </form>
 
                         <h4 className="titulo h4">4. Partes e instituciones</h4>
 
                         <form className="d-flex flex-column gap-3 mb-5">
                             <h5 className="titulo h5">Instituciones firmantes</h5>
-                            <select id="primera-institucion" name="primera_institucion" className="form-select border rounded" defaultValue="unlpam">
-                                <option value="unlpam">Universidad Nacional de La Pampa</option>
+                            <select id="primera-institucion" name="primera_institucion" className="form-select border rounded" defaultValue="1">
+                                <option value="1">Universidad Nacional de La Pampa</option>
+                                <option value="2">Instituto Pampeano de Innovacion</option>
+                                <option value="3">Empresa Tecnológica Horizonte</option>
                             </select>
-                            <select id="segunda-institucion" name="segunda_institucion" className="form-select border rounded" defaultValue="unlpam">
-                                <option value="unlpam">Universidad Nacional de La Pampa</option>
+                            <select id="segunda-institucion" name="segunda_institucion" className="form-select border rounded" defaultValue="2">
+                                <option value="1">Universidad Nacional de La Pampa</option>
+                                <option value="2">Instituto Pampeano de Innovacion</option>
+                                <option value="3">Empresa Tecnológica Horizonte</option>
                             </select>
                         </form>
 
