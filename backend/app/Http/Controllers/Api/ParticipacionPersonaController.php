@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Instrumento;
 use App\Models\ParticipacionPersona;
 use App\Services\AuditoriaService;
 use Illuminate\Http\Request;
@@ -13,10 +14,14 @@ class ParticipacionPersonaController extends Controller
     // Listar participaciones
     public function index(Request $request)
     {
+        $this->authorize('viewAny', ParticipacionPersona::class);
+
         $consulta = ParticipacionPersona::with([
             'persona',
             'instrumento'
-        ]);
+        ])->whereHas('instrumento', function ($query) {
+            $query->visiblesPara(auth()->user());
+        });
 
         if ($request->filled('id_persona')) {
             $consulta->where('id_persona', $request->id_persona);
@@ -40,7 +45,11 @@ class ParticipacionPersonaController extends Controller
         $participacion = ParticipacionPersona::with([
             'persona',
             'instrumento'
-        ])->findOrFail($id);
+        ])->whereHas('instrumento', function ($query) {
+            $query->visiblesPara(auth()->user());
+        })->findOrFail($id);
+
+        $this->authorize('view', $participacion);
 
         return response()->json([
             'mensaje' => 'Participación obtenida correctamente',
@@ -51,6 +60,8 @@ class ParticipacionPersonaController extends Controller
     // Registrar una participación
     public function store(Request $request)
     {
+        $this->authorize('create', ParticipacionPersona::class);
+
         $datos = $request->validate([
             'id_persona' => 'required|exists:personas,id_persona',
             'id_instrumento' => 'required|exists:instrumentos,id_instrumento',
@@ -60,22 +71,25 @@ class ParticipacionPersonaController extends Controller
             'descripcion' => 'nullable|string'
         ]);
 
+        Instrumento::visiblesPara(auth()->user())
+            ->findOrFail($datos['id_instrumento']);
+
         $participacion = DB::transaction(function () use ($datos) {
 
-            $participacion = ParticipacionPersona::create($datos);
+            $nuevaParticipacion = ParticipacionPersona::create($datos);
 
             AuditoriaService::registrar(
                 'crear',
                 'participaciones_personas',
-                $participacion->id_participacion_persona,
+                $nuevaParticipacion->id_participacion_persona,
                 [
-                    'id_persona' => $participacion->id_persona,
-                    'id_instrumento' => $participacion->id_instrumento,
-                    'rol' => $participacion->rol
+                    'id_persona' => $nuevaParticipacion->id_persona,
+                    'id_instrumento' => $nuevaParticipacion->id_instrumento,
+                    'rol' => $nuevaParticipacion->rol
                 ]
             );
 
-            return $participacion;
+            return $nuevaParticipacion;
         });
 
         return response()->json([
@@ -90,7 +104,10 @@ class ParticipacionPersonaController extends Controller
     // Actualizar una participación
     public function update(Request $request, $id)
     {
-        $participacion = ParticipacionPersona::findOrFail($id);
+        $participacion = ParticipacionPersona::with('instrumento')
+            ->findOrFail($id);
+
+        $this->authorize('update', $participacion);
 
         $datos = $request->validate([
             'id_persona' => 'sometimes|required|exists:personas,id_persona',
@@ -101,9 +118,19 @@ class ParticipacionPersonaController extends Controller
             'descripcion' => 'sometimes|nullable|string'
         ]);
 
+        $idInstrumento = $datos['id_instrumento']
+            ?? $participacion->id_instrumento;
+
+        Instrumento::visiblesPara(auth()->user())
+            ->findOrFail($idInstrumento);
+
         $camposModificados = array_keys($datos);
 
-        DB::transaction(function () use ($participacion, $datos, $camposModificados) {
+        DB::transaction(function () use (
+            $participacion,
+            $datos,
+            $camposModificados
+        ) {
 
             $participacion->update($datos);
 

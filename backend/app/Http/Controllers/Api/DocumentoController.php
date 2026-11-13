@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Documento;
+use App\Models\Instrumento;
 use App\Services\AuditoriaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,23 +12,23 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Throwable;
 
-// El id_usuario_subio = 2 es temporal.
-// Cuando implementemos autenticación, lo reemplazaremos por el usuario autenticado.
-
-// Las nuevas versiones conservan el tipo de documento y quedan vinculadas
-// a la versión anterior. No sobrescriben ni eliminan el PDF previo.
-
 class DocumentoController extends Controller
 {
     // Listar documentos
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Documento::class);
+
+        $usuario = auth()->user();
+
         $query = Documento::with([
             'instrumento',
             'usuarioSubio',
             'documentoAnterior',
             'versionSiguiente'
-        ]);
+        ])->whereHas('instrumento', function ($q) use ($usuario) {
+            $q->visiblesPara($usuario);
+        });
 
         if ($request->filled('id_instrumento')) {
             $query->where('id_instrumento', $request->id_instrumento);
@@ -37,33 +38,54 @@ class DocumentoController extends Controller
             $query->where('tipo_documento', $request->tipo_documento);
         }
 
-        $documentos = $query->orderBy('created_at', 'desc')->get();
+        $documentos = $query
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        $documentos->each(function ($documento) {
+                $documentos->each(function ($documento) {
             $documento->makeHidden(['ruta_archivo']);
+
+            $documento->documentoAnterior?->makeHidden(['ruta_archivo']);
+
+            $documento->versionSiguiente?->makeHidden(['ruta_archivo']);
         });
 
         return response()->json($documentos, 200);
     }
 
     // Consultar un documento
+    // Consultar un documento
     public function show($id)
     {
+        $usuario = auth()->user();
+
         $documento = Documento::with([
             'instrumento',
             'usuarioSubio',
             'documentoAnterior',
             'versionSiguiente'
-        ])->findOrFail($id);
+        ])
+            ->whereHas('instrumento', function ($q) use ($usuario) {
+                $q->visiblesPara($usuario);
+            })
+            ->findOrFail($id);
 
+        $this->authorize('view', $documento);
+
+        // Ocultar la ruta del documento principal
         $documento->makeHidden(['ruta_archivo']);
+
+        // Ocultar las rutas de sus versiones relacionadas
+        $documento->documentoAnterior?->makeHidden(['ruta_archivo']);
+        $documento->versionSiguiente?->makeHidden(['ruta_archivo']);
 
         return response()->json($documento, 200);
     }
-
     // Subir un documento nuevo
     public function store(Request $request)
     {
+        $this->authorize('create', Documento::class);
+
         $datos = $request->validate([
             'id_instrumento' => [
                 'required',
@@ -72,7 +94,13 @@ class DocumentoController extends Controller
             ],
             'tipo_documento' => [
                 'required',
-                Rule::in(['principal', 'anexo', 'dictamen', 'resolucion', 'otro'])
+                Rule::in([
+                    'principal',
+                    'anexo',
+                    'dictamen',
+                    'resolucion',
+                    'otro'
+                ])
             ],
             'archivo' => [
                 'required',
@@ -82,10 +110,13 @@ class DocumentoController extends Controller
             ]
         ]);
 
+        $instrumento = Instrumento::visiblesPara(auth()->user())
+            ->findOrFail($datos['id_instrumento']);
+
         $archivo = $request->file('archivo');
 
         $ruta = $archivo->store(
-            'documentos/' . $datos['id_instrumento'],
+            'documentos/' . $instrumento->id_instrumento,
             'local'
         );
 
@@ -100,14 +131,17 @@ class DocumentoController extends Controller
 
                 $documento = Documento::create([
                     'id_instrumento' => $datos['id_instrumento'],
-                    'id_usuario_subio' => 2, // Temporal: usuario administrador.
+                    'id_usuario_subio' => auth()->id(),
                     'id_documento_anterior' => null,
                     'nombre' => $archivo->getClientOriginalName(),
                     'tipo_documento' => $datos['tipo_documento'],
                     'formato' => 'PDF',
                     'ruta_archivo' => $ruta,
                     'tamanio' => $archivo->getSize(),
-                    'hash_sha256' => hash_file('sha256', $archivo->getRealPath()),
+                    'hash_sha256' => hash_file(
+                        'sha256',
+                        $archivo->getRealPath()
+                    ),
                     'version' => 1
                 ]);
 
@@ -126,7 +160,11 @@ class DocumentoController extends Controller
                 return $documento;
             });
 
-            $documento->load(['instrumento', 'usuarioSubio']);
+            $documento->load([
+                'instrumento',
+                'usuarioSubio'
+            ]);
+
             $documento->makeHidden(['ruta_archivo']);
 
             return response()->json([
@@ -137,16 +175,27 @@ class DocumentoController extends Controller
         } catch (Throwable $e) {
             Storage::disk('local')->delete($ruta);
 
+            report($e);
+
             return response()->json([
-                'mensaje' => 'Ocurrió un error al registrar el documento.',
-                'error' => $e->getMessage()
+                'mensaje' => 'Ocurrió un error al registrar el documento.'
             ], 500);
         }
     }
 
-    // Subir una nueva versión de un documento
+    // Subir una nueva versión
     public function nuevaVersion(Request $request, $id)
     {
+        $usuario = auth()->user();
+
+        $documentoAnterior = Documento::with('instrumento')
+            ->whereHas('instrumento', function ($q) use ($usuario) {
+                $q->visiblesPara($usuario);
+            })
+            ->findOrFail($id);
+
+        $this->authorize('createVersion', $documentoAnterior);
+
         $datos = $request->validate([
             'archivo' => [
                 'required',
@@ -156,15 +205,13 @@ class DocumentoController extends Controller
             ]
         ]);
 
-        $documentoAnterior = Documento::findOrFail($id);
-
-        // Evitar crear versiones a partir de una versión que ya tiene sucesora.
         if ($documentoAnterior->versionSiguiente()->exists()) {
             return response()->json([
                 'mensaje' => 'Este documento ya tiene una versión posterior. Debés subir la nueva versión desde la última.'
             ], 422);
         }
 
+        
         $archivo = $request->file('archivo');
 
         $ruta = $archivo->store(
@@ -179,18 +226,25 @@ class DocumentoController extends Controller
         }
 
         try {
-            $documento = DB::transaction(function () use ($documentoAnterior, $archivo, $ruta) {
+            $documento = DB::transaction(function () use (
+                $documentoAnterior,
+                $archivo,
+                $ruta
+            ) {
 
                 $documento = Documento::create([
                     'id_instrumento' => $documentoAnterior->id_instrumento,
-                    'id_usuario_subio' => 2, // Temporal: usuario administrador.
+                    'id_usuario_subio' => auth()->id(),
                     'id_documento_anterior' => $documentoAnterior->id_documento,
                     'nombre' => $archivo->getClientOriginalName(),
                     'tipo_documento' => $documentoAnterior->tipo_documento,
                     'formato' => 'PDF',
                     'ruta_archivo' => $ruta,
                     'tamanio' => $archivo->getSize(),
-                    'hash_sha256' => hash_file('sha256', $archivo->getRealPath()),
+                    'hash_sha256' => hash_file(
+                        'sha256',
+                        $archivo->getRealPath()
+                    ),
                     'version' => $documentoAnterior->version + 1
                 ]);
 
@@ -219,6 +273,9 @@ class DocumentoController extends Controller
 
             $documento->makeHidden(['ruta_archivo']);
 
+            $documento->documentoAnterior?->makeHidden(['ruta_archivo']);
+            $documento->versionSiguiente?->makeHidden(['ruta_archivo']);
+
             return response()->json([
                 'mensaje' => 'Nueva versión subida correctamente.',
                 'documento' => $documento
@@ -227,9 +284,10 @@ class DocumentoController extends Controller
         } catch (Throwable $e) {
             Storage::disk('local')->delete($ruta);
 
+            report($e);
+
             return response()->json([
-                'mensaje' => 'Ocurrió un error al registrar la nueva versión.',
-                'error' => $e->getMessage()
+                'mensaje' => 'Ocurrió un error al registrar la nueva versión.'
             ], 500);
         }
     }
@@ -237,13 +295,31 @@ class DocumentoController extends Controller
     // Descargar un documento
     public function descargar($id)
     {
-        $documento = Documento::findOrFail($id);
+        $usuario = auth()->user();
+
+        $documento = Documento::with('instrumento')
+            ->whereHas('instrumento', function ($q) use ($usuario) {
+                $q->visiblesPara($usuario);
+            })
+            ->findOrFail($id);
+
+        $this->authorize('download', $documento);
 
         if (!Storage::disk('local')->exists($documento->ruta_archivo)) {
             return response()->json([
                 'mensaje' => 'El archivo solicitado no existe en el almacenamiento.'
             ], 404);
         }
+
+        AuditoriaService::registrar(
+            'descargar',
+            'documentos',
+            $documento->id_documento,
+            [
+                'id_instrumento' => $documento->id_instrumento,
+                'nombre' => $documento->nombre
+            ]
+        );
 
         return Storage::disk('local')->download(
             $documento->ruta_archivo,
