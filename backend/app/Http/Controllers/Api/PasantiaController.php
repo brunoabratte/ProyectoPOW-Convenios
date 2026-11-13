@@ -3,23 +3,29 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Instrumento;
 use App\Models\Pasantia;
 use App\Services\AuditoriaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PasantiaController extends Controller
 {
     // Listar pasantías
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Pasantia::class);
+
         $consulta = Pasantia::with([
             'instrumento',
             'estudiante',
             'tutor',
             'institucionReceptora',
             'responsableReceptor'
-        ]);
+        ])->whereHas('instrumento', function ($query) {
+            $query->visiblesPara(auth()->user());
+        });
 
         if ($request->filled('id_instrumento')) {
             $consulta->where('id_instrumento', $request->id_instrumento);
@@ -56,7 +62,11 @@ class PasantiaController extends Controller
             'tutor',
             'institucionReceptora',
             'responsableReceptor'
-        ])->findOrFail($id);
+        ])->whereHas('instrumento', function ($query) {
+            $query->visiblesPara(auth()->user());
+        })->findOrFail($id);
+
+        $this->authorize('view', $pasantia);
 
         return response()->json([
             'mensaje' => 'Pasantía obtenida correctamente',
@@ -67,6 +77,8 @@ class PasantiaController extends Controller
     // Registrar una pasantía
     public function store(Request $request)
     {
+        $this->authorize('create', Pasantia::class);
+
         $datos = $request->validate([
             'id_instrumento' =>
                 'required|exists:instrumentos,id_instrumento',
@@ -97,28 +109,39 @@ class PasantiaController extends Controller
 
             'seguro' => 'nullable|string|max:255',
 
-            'estado' => 'required|string|max:100'
+            'estado' => [
+                'required',
+                Rule::in([
+                    'planificada',
+                    'en_curso',
+                    'finalizada',
+                    'cancelada'
+                ])
+            ]
         ]);
+
+        Instrumento::visiblesPara(auth()->user())
+            ->findOrFail($datos['id_instrumento']);
 
         $pasantia = DB::transaction(function () use ($datos) {
 
-            $pasantia = Pasantia::create($datos);
+            $nuevaPasantia = Pasantia::create($datos);
 
             AuditoriaService::registrar(
                 'crear',
                 'pasantias',
-                $pasantia->id_pasantia,
+                $nuevaPasantia->id_pasantia,
                 [
-                    'id_instrumento' => $pasantia->id_instrumento,
-                    'id_persona_estudiante' => $pasantia->id_persona_estudiante,
-                    'id_persona_tutor' => $pasantia->id_persona_tutor,
-                    'id_institucion_receptora' => $pasantia->id_institucion_receptora,
-                    'carrera' => $pasantia->carrera,
-                    'estado' => $pasantia->estado
+                    'id_instrumento' => $nuevaPasantia->id_instrumento,
+                    'id_persona_estudiante' => $nuevaPasantia->id_persona_estudiante,
+                    'id_persona_tutor' => $nuevaPasantia->id_persona_tutor,
+                    'id_institucion_receptora' => $nuevaPasantia->id_institucion_receptora,
+                    'carrera' => $nuevaPasantia->carrera,
+                    'estado' => $nuevaPasantia->estado
                 ]
             );
 
-            return $pasantia;
+            return $nuevaPasantia;
         });
 
         return response()->json([
@@ -136,7 +159,9 @@ class PasantiaController extends Controller
     // Actualizar una pasantía
     public function update(Request $request, $id)
     {
-        $pasantia = Pasantia::findOrFail($id);
+        $pasantia = Pasantia::with('instrumento')->findOrFail($id);
+
+        $this->authorize('update', $pasantia);
 
         $datos = $request->validate([
             'id_instrumento' =>
@@ -168,11 +193,29 @@ class PasantiaController extends Controller
 
             'seguro' => 'sometimes|nullable|string|max:255',
 
-            'estado' => 'sometimes|required|string|max:100'
+            'estado' => [
+                'sometimes',
+                'required',
+                Rule::in([
+                    'planificada',
+                    'en_curso',
+                    'finalizada',
+                    'cancelada'
+                ])
+            ]
         ]);
 
-        $fechaInicio = $datos['fecha_inicio'] ?? $pasantia->fecha_inicio;
-        $fechaFin = $datos['fecha_fin'] ?? $pasantia->fecha_fin;
+        $idInstrumento = $datos['id_instrumento']
+            ?? $pasantia->id_instrumento;
+
+        Instrumento::visiblesPara(auth()->user())
+            ->findOrFail($idInstrumento);
+
+        $fechaInicio = $datos['fecha_inicio']
+            ?? $pasantia->fecha_inicio;
+
+        $fechaFin = $datos['fecha_fin']
+            ?? $pasantia->fecha_fin;
 
         if ($fechaFin < $fechaInicio) {
             return response()->json([
