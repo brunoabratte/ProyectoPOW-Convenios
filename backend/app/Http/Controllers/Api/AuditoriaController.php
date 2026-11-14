@@ -11,16 +11,32 @@ class AuditoriaController extends Controller
     // Listar auditorías con filtros opcionales
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Auditoria::class);
+
         $datos = $request->validate([
             'id_usuario' => [
                 'sometimes',
                 'integer',
                 'exists:usuarios,id_usuario'
             ],
-            'accion' => ['sometimes', 'string', 'max:100'],
-            'entidad' => ['sometimes', 'string', 'max:100'],
-            'entidad_id' => ['sometimes', 'integer'],
-            'fecha_desde' => ['sometimes', 'date'],
+            'accion' => [
+                'sometimes',
+                'string',
+                'max:100'
+            ],
+            'entidad' => [
+                'sometimes',
+                'string',
+                'max:100'
+            ],
+            'entidad_id' => [
+                'sometimes',
+                'integer'
+            ],
+            'fecha_desde' => [
+                'sometimes',
+                'date'
+            ],
             'fecha_hasta' => [
                 'sometimes',
                 'date',
@@ -64,7 +80,10 @@ class AuditoriaController extends Controller
     // Consultar una auditoría específica
     public function show($id)
     {
-        $auditoria = Auditoria::with('usuario')->findOrFail($id);
+        $auditoria = Auditoria::with('usuario')
+            ->findOrFail($id);
+
+        $this->authorize('view', $auditoria);
 
         return response()->json($auditoria, 200);
     }

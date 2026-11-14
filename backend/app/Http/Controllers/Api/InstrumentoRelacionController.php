@@ -17,17 +17,29 @@ class InstrumentoRelacionController extends Controller
     {
         $this->authorize('viewAny', InstrumentoRelacion::class);
 
+        $datos = $request->validate([
+            'id_instrumento' => [
+                'sometimes',
+                'integer',
+                'exists:instrumentos,id_instrumento'
+            ]
+        ]);
+
+        $usuario = auth()->user();
+
         $consulta = InstrumentoRelacion::with([
             'instrumentoOrigen',
             'instrumentoDestino'
-        ])->whereHas('instrumentoOrigen', function ($query) {
-            $query->visiblesPara(auth()->user());
-        })->whereHas('instrumentoDestino', function ($query) {
-            $query->visiblesPara(auth()->user());
-        });
+        ])
+            ->whereHas('instrumentoOrigen', function ($query) use ($usuario) {
+                $query->visiblesPara($usuario);
+            })
+            ->whereHas('instrumentoDestino', function ($query) use ($usuario) {
+                $query->visiblesPara($usuario);
+            });
 
-        if ($request->filled('id_instrumento')) {
-            $id = $request->id_instrumento;
+        if (isset($datos['id_instrumento'])) {
+            $id = $datos['id_instrumento'];
 
             $consulta->where(function ($query) use ($id) {
                 $query->where('id_instrumento_origen', $id)
@@ -35,7 +47,9 @@ class InstrumentoRelacionController extends Controller
             });
         }
 
-        $relaciones = $consulta->get();
+        $relaciones = $consulta
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return response()->json([
             'mensaje' => 'Relaciones obtenidas correctamente',
@@ -46,14 +60,19 @@ class InstrumentoRelacionController extends Controller
     // Consultar una relación
     public function show($id)
     {
+        $usuario = auth()->user();
+
         $relacion = InstrumentoRelacion::with([
             'instrumentoOrigen',
             'instrumentoDestino'
-        ])->whereHas('instrumentoOrigen', function ($query) {
-            $query->visiblesPara(auth()->user());
-        })->whereHas('instrumentoDestino', function ($query) {
-            $query->visiblesPara(auth()->user());
-        })->findOrFail($id);
+        ])
+            ->whereHas('instrumentoOrigen', function ($query) use ($usuario) {
+                $query->visiblesPara($usuario);
+            })
+            ->whereHas('instrumentoDestino', function ($query) use ($usuario) {
+                $query->visiblesPara($usuario);
+            })
+            ->findOrFail($id);
 
         $this->authorize('view', $relacion);
 
@@ -69,11 +88,18 @@ class InstrumentoRelacionController extends Controller
         $this->authorize('create', InstrumentoRelacion::class);
 
         $datos = $request->validate([
-            'id_instrumento_origen' =>
-                'required|exists:instrumentos,id_instrumento',
+            'id_instrumento_origen' => [
+                'required',
+                'integer',
+                'exists:instrumentos,id_instrumento'
+            ],
 
-            'id_instrumento_destino' =>
-                'required|different:id_instrumento_origen|exists:instrumentos,id_instrumento',
+            'id_instrumento_destino' => [
+                'required',
+                'integer',
+                'different:id_instrumento_origen',
+                'exists:instrumentos,id_instrumento'
+            ],
 
             'tipo_relacion' => [
                 'required',
@@ -88,10 +114,13 @@ class InstrumentoRelacionController extends Controller
             'descripcion' => 'nullable|string'
         ]);
 
-        Instrumento::visiblesPara(auth()->user())
+        $usuario = auth()->user();
+
+        // Verificar que ambos instrumentos estén dentro del alcance.
+        Instrumento::visiblesPara($usuario)
             ->findOrFail($datos['id_instrumento_origen']);
 
-        Instrumento::visiblesPara(auth()->user())
+        Instrumento::visiblesPara($usuario)
             ->findOrFail($datos['id_instrumento_destino']);
 
         $relacion = DB::transaction(function () use ($datos) {
@@ -103,8 +132,12 @@ class InstrumentoRelacionController extends Controller
                 'instrumentos_relaciones',
                 $nuevaRelacion->id_instrumento_relacion,
                 [
-                    'id_instrumento_origen' => $nuevaRelacion->id_instrumento_origen,
-                    'id_instrumento_destino' => $nuevaRelacion->id_instrumento_destino,
+                    'id_instrumento_origen' =>
+                        $nuevaRelacion->id_instrumento_origen,
+
+                    'id_instrumento_destino' =>
+                        $nuevaRelacion->id_instrumento_destino,
+
                     'tipo_relacion' => $nuevaRelacion->tipo_relacion
                 ]
             );
@@ -124,19 +157,37 @@ class InstrumentoRelacionController extends Controller
     // Actualizar una relación
     public function update(Request $request, $id)
     {
+        $usuario = auth()->user();
+
+        // Buscar relaciones cuyos dos instrumentos sean visibles.
         $relacion = InstrumentoRelacion::with([
             'instrumentoOrigen',
             'instrumentoDestino'
-        ])->findOrFail($id);
+        ])
+            ->whereHas('instrumentoOrigen', function ($query) use ($usuario) {
+                $query->visiblesPara($usuario);
+            })
+            ->whereHas('instrumentoDestino', function ($query) use ($usuario) {
+                $query->visiblesPara($usuario);
+            })
+            ->findOrFail($id);
 
         $this->authorize('update', $relacion);
 
         $datos = $request->validate([
-            'id_instrumento_origen' =>
-                'sometimes|required|exists:instrumentos,id_instrumento',
+            'id_instrumento_origen' => [
+                'sometimes',
+                'required',
+                'integer',
+                'exists:instrumentos,id_instrumento'
+            ],
 
-            'id_instrumento_destino' =>
-                'sometimes|required|exists:instrumentos,id_instrumento',
+            'id_instrumento_destino' => [
+                'sometimes',
+                'required',
+                'integer',
+                'exists:instrumentos,id_instrumento'
+            ],
 
             'tipo_relacion' => [
                 'sometimes',
@@ -164,8 +215,12 @@ class InstrumentoRelacionController extends Controller
             ], 422);
         }
 
-        Instrumento::visiblesPara(auth()->user())->findOrFail($origen);
-        Instrumento::visiblesPara(auth()->user())->findOrFail($destino);
+        // Verificar que los instrumentos de destino sean visibles.
+        Instrumento::visiblesPara($usuario)
+            ->findOrFail($origen);
+
+        Instrumento::visiblesPara($usuario)
+            ->findOrFail($destino);
 
         DB::transaction(function () use ($relacion, $datos) {
 
@@ -177,8 +232,13 @@ class InstrumentoRelacionController extends Controller
                 $relacion->id_instrumento_relacion,
                 [
                     'campos_modificados' => array_keys($datos),
-                    'id_instrumento_origen' => $relacion->id_instrumento_origen,
-                    'id_instrumento_destino' => $relacion->id_instrumento_destino,
+
+                    'id_instrumento_origen' =>
+                        $relacion->id_instrumento_origen,
+
+                    'id_instrumento_destino' =>
+                        $relacion->id_instrumento_destino,
+
                     'tipo_relacion' => $relacion->tipo_relacion
                 ]
             );

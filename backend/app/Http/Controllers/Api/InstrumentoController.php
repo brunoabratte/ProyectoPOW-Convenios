@@ -10,6 +10,7 @@ use App\Services\AuditoriaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 class InstrumentoController extends Controller
@@ -91,10 +92,26 @@ class InstrumentoController extends Controller
 
             'fecha_firma' => 'nullable|date',
             'fecha_inicio' => 'nullable|date',
-            'fecha_vencimiento' => 'nullable|date|after_or_equal:fecha_inicio',
+            'fecha_vencimiento' => 'nullable|date',
 
             'plazo_preaviso' => 'nullable|integer|min:0',
         ]);
+
+        // Validar que el vencimiento no sea anterior al inicio.
+        $fechaInicio = $datos['fecha_inicio'] ?? $instrumento->fecha_inicio;
+        $fechaVencimiento = $datos['fecha_vencimiento'] ?? $instrumento->fecha_vencimiento;
+
+        if (
+            $fechaInicio &&
+            $fechaVencimiento &&
+            Carbon::parse($fechaVencimiento)->lt(Carbon::parse($fechaInicio))
+        ) {
+            throw ValidationException::withMessages([
+                'fecha_vencimiento' => [
+                    'La fecha de vencimiento no puede ser anterior a la fecha de inicio.'
+                ]
+            ]);
+        }
 
         // Un usuario con unidad asignada no puede mover
         // instrumentos a otra unidad.
@@ -241,7 +258,6 @@ class InstrumentoController extends Controller
         if ($estadoActual === 'borrador' && $estadoNuevo->nombre === 'revision') {
             $this->authorize('update', $instrumento);
         }
-        // Revisión puede aprobar o devolver para corrección.
         // Revisión puede aprobar o devolver para corrección.
         elseif (
             $estadoActual === 'revision'

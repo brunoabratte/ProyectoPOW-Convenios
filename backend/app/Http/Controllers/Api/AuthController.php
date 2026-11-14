@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -20,7 +19,10 @@ class AuthController extends Controller
 
         $usuario = User::where('email', $datos['email'])->first();
 
-        if (!$usuario || !Hash::check($datos['password'], $usuario->password)) {
+        if (
+            !$usuario ||
+            !Hash::check($datos['password'], $usuario->password)
+        ) {
             return response()->json([
                 'mensaje' => 'Las credenciales ingresadas son incorrectas.'
             ], 401);
@@ -44,8 +46,16 @@ class AuthController extends Controller
     // Consultar usuario autenticado
     public function me(Request $request)
     {
+        $usuario = $request->user();
+
         return response()->json([
-            'usuario' => $request->user()
+            'usuario' => [
+                'id_usuario' => $usuario->id_usuario,
+                'name' => $usuario->name,
+                'email' => $usuario->email,
+                'rol' => $usuario->rol,
+                'id_unidad' => $usuario->id_unidad
+            ]
         ], 200);
     }
 

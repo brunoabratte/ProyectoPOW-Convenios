@@ -19,6 +19,24 @@ class DocumentoController extends Controller
     {
         $this->authorize('viewAny', Documento::class);
 
+        $datos = $request->validate([
+            'id_instrumento' => [
+                'sometimes',
+                'integer',
+                'exists:instrumentos,id_instrumento'
+            ],
+            'tipo_documento' => [
+                'sometimes',
+                Rule::in([
+                    'principal',
+                    'anexo',
+                    'dictamen',
+                    'resolucion',
+                    'otro'
+                ])
+            ]
+        ]);
+
         $usuario = auth()->user();
 
         $query = Documento::with([
@@ -30,30 +48,29 @@ class DocumentoController extends Controller
             $q->visiblesPara($usuario);
         });
 
-        if ($request->filled('id_instrumento')) {
-            $query->where('id_instrumento', $request->id_instrumento);
+        if (isset($datos['id_instrumento'])) {
+            $query->where('id_instrumento', $datos['id_instrumento']);
         }
 
-        if ($request->filled('tipo_documento')) {
-            $query->where('tipo_documento', $request->tipo_documento);
+        if (isset($datos['tipo_documento'])) {
+            $query->where('tipo_documento', $datos['tipo_documento']);
         }
 
         $documentos = $query
             ->orderBy('created_at', 'desc')
             ->get();
 
-                $documentos->each(function ($documento) {
+        // Ocultar las rutas de almacenamiento.
+        $documentos->each(function ($documento) {
             $documento->makeHidden(['ruta_archivo']);
 
             $documento->documentoAnterior?->makeHidden(['ruta_archivo']);
-
             $documento->versionSiguiente?->makeHidden(['ruta_archivo']);
         });
 
         return response()->json($documentos, 200);
     }
 
-    // Consultar un documento
     // Consultar un documento
     public function show($id)
     {
@@ -72,15 +89,15 @@ class DocumentoController extends Controller
 
         $this->authorize('view', $documento);
 
-        // Ocultar la ruta del documento principal
+        // Ocultar las rutas del documento y sus versiones relacionadas.
         $documento->makeHidden(['ruta_archivo']);
 
-        // Ocultar las rutas de sus versiones relacionadas
         $documento->documentoAnterior?->makeHidden(['ruta_archivo']);
         $documento->versionSiguiente?->makeHidden(['ruta_archivo']);
 
         return response()->json($documento, 200);
     }
+
     // Subir un documento nuevo
     public function store(Request $request)
     {
@@ -110,11 +127,13 @@ class DocumentoController extends Controller
             ]
         ]);
 
+        // Verificar que el instrumento pertenezca al alcance del usuario.
         $instrumento = Instrumento::visiblesPara(auth()->user())
             ->findOrFail($datos['id_instrumento']);
 
         $archivo = $request->file('archivo');
 
+        // Guardar el archivo en almacenamiento privado.
         $ruta = $archivo->store(
             'documentos/' . $instrumento->id_instrumento,
             'local'
@@ -127,7 +146,11 @@ class DocumentoController extends Controller
         }
 
         try {
-            $documento = DB::transaction(function () use ($datos, $archivo, $ruta) {
+            $documento = DB::transaction(function () use (
+                $datos,
+                $archivo,
+                $ruta
+            ) {
 
                 $documento = Documento::create([
                     'id_instrumento' => $datos['id_instrumento'],
@@ -173,6 +196,8 @@ class DocumentoController extends Controller
             ], 201);
 
         } catch (Throwable $e) {
+
+            // Si falla el registro, eliminar el archivo guardado.
             Storage::disk('local')->delete($ruta);
 
             report($e);
@@ -205,13 +230,14 @@ class DocumentoController extends Controller
             ]
         ]);
 
+        // Evitar crear una versión desde un documento que ya tiene
+        // una versión posterior.
         if ($documentoAnterior->versionSiguiente()->exists()) {
             return response()->json([
                 'mensaje' => 'Este documento ya tiene una versión posterior. Debés subir la nueva versión desde la última.'
             ], 422);
         }
 
-        
         $archivo = $request->file('archivo');
 
         $ruta = $archivo->store(
@@ -282,6 +308,7 @@ class DocumentoController extends Controller
             ], 201);
 
         } catch (Throwable $e) {
+
             Storage::disk('local')->delete($ruta);
 
             report($e);

@@ -3,22 +3,39 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Instrumento;
 use App\Models\Observacion;
 use App\Services\AuditoriaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ObservacionController extends Controller
 {
     // Listar observaciones
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Observacion::class);
+
+        $usuario = Auth::user();
+
         $datos = $request->validate([
-            'id_instrumento' => ['sometimes', 'integer', 'exists:instrumentos,id_instrumento'],
-            'estado' => ['sometimes', Rule::in(['pendiente', 'respondida', 'resuelta'])],
-            'id_usuario' => ['sometimes', 'integer', 'exists:usuarios,id_usuario'],
+            'id_instrumento' => [
+                'sometimes',
+                'integer',
+                'exists:instrumentos,id_instrumento'
+            ],
+            'estado' => [
+                'sometimes',
+                Rule::in(['pendiente', 'respondida', 'resuelta'])
+            ],
+            'id_usuario' => [
+                'sometimes',
+                'integer',
+                'exists:usuarios,id_usuario'
+            ],
         ]);
 
         $query = Observacion::with([
@@ -27,7 +44,9 @@ class ObservacionController extends Controller
             'estadoInstrumento',
             'usuarioRespondio',
             'usuarioResolvio'
-        ]);
+        ])->whereHas('instrumento', function ($q) use ($usuario) {
+            $q->visiblesPara($usuario);
+        });
 
         if (isset($datos['id_instrumento'])) {
             $query->where('id_instrumento', $datos['id_instrumento']);
@@ -50,13 +69,21 @@ class ObservacionController extends Controller
     // Consultar una observación
     public function show($id)
     {
+        $usuario = Auth::user();
+
         $observacion = Observacion::with([
             'instrumento',
             'autor',
             'estadoInstrumento',
             'usuarioRespondio',
             'usuarioResolvio'
-        ])->findOrFail($id);
+        ])
+            ->whereHas('instrumento', function ($q) use ($usuario) {
+                $q->visiblesPara($usuario);
+            })
+            ->findOrFail($id);
+
+        $this->authorize('view', $observacion);
 
         return response()->json($observacion, 200);
     }
@@ -64,6 +91,8 @@ class ObservacionController extends Controller
     // Crear una observación
     public function store(Request $request)
     {
+        $this->authorize('create', Observacion::class);
+
         $datos = $request->validate([
             'id_instrumento' => [
                 'required',
@@ -75,10 +104,27 @@ class ObservacionController extends Controller
                 'integer',
                 'exists:estados,id_estado'
             ],
-            'contenido' => ['required', 'string']
+            'contenido' => [
+                'required',
+                'string'
+            ]
         ]);
 
+        // Verificar que el instrumento pertenezca al alcance del usuario.
+        $instrumento = Instrumento::visiblesPara(Auth::user())
+            ->findOrFail($datos['id_instrumento']);
+
+        // Verificar que el estado indicado sea el actual del instrumento.
+        if ((int) $datos['id_estado_instrumento'] !== (int) $instrumento->id_estado) {
+            throw ValidationException::withMessages([
+                'id_estado_instrumento' => [
+                    'El estado indicado no coincide con el estado actual del instrumento.'
+                ]
+            ]);
+        }
+
         $observacion = DB::transaction(function () use ($datos) {
+
             $observacion = Observacion::create([
                 'id_instrumento' => $datos['id_instrumento'],
                 'id_usuario' => Auth::id(),
@@ -116,11 +162,22 @@ class ObservacionController extends Controller
     // Responder una observación
     public function responder(Request $request, $id)
     {
-        $datos = $request->validate([
-            'respuesta' => ['required', 'string']
-        ]);
+        $usuario = Auth::user();
 
-        $observacion = Observacion::findOrFail($id);
+        $observacion = Observacion::with('instrumento')
+            ->whereHas('instrumento', function ($q) use ($usuario) {
+                $q->visiblesPara($usuario);
+            })
+            ->findOrFail($id);
+
+        $this->authorize('respond', $observacion);
+
+        $datos = $request->validate([
+            'respuesta' => [
+                'required',
+                'string'
+            ]
+        ]);
 
         if ($observacion->estado !== 'pendiente') {
             return response()->json([
@@ -129,6 +186,7 @@ class ObservacionController extends Controller
         }
 
         DB::transaction(function () use ($observacion, $datos) {
+
             $observacion->update([
                 'respuesta' => $datos['respuesta'],
                 'estado' => 'respondida',
@@ -163,17 +221,27 @@ class ObservacionController extends Controller
     // Resolver una observación
     public function resolver($id)
     {
-        $observacion = Observacion::findOrFail($id);
+        $usuario = Auth::user();
 
-        if ($observacion->estado === 'resuelta') {
+        $observacion = Observacion::with('instrumento')
+            ->whereHas('instrumento', function ($q) use ($usuario) {
+                $q->visiblesPara($usuario);
+            })
+            ->findOrFail($id);
+
+        $this->authorize('resolve', $observacion);
+
+        // Solo se pueden resolver observaciones respondidas.
+        if ($observacion->estado !== 'respondida') {
             return response()->json([
-                'mensaje' => 'La observación ya se encuentra resuelta.'
+                'mensaje' => 'Solo se pueden resolver observaciones que hayan sido respondidas.'
             ], 422);
         }
 
         $estadoAnterior = $observacion->estado;
 
         DB::transaction(function () use ($observacion, $estadoAnterior) {
+
             $observacion->update([
                 'estado' => 'resuelta',
                 'id_usuario_resolvio' => Auth::id(),

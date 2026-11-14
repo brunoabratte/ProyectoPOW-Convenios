@@ -8,7 +8,9 @@ use App\Models\Pasantia;
 use App\Services\AuditoriaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PasantiaController extends Controller
 {
@@ -17,35 +19,60 @@ class PasantiaController extends Controller
     {
         $this->authorize('viewAny', Pasantia::class);
 
+        $datos = $request->validate([
+            'id_instrumento' => [
+                'sometimes',
+                'integer',
+                'exists:instrumentos,id_instrumento'
+            ],
+            'id_persona_estudiante' => [
+                'sometimes',
+                'integer',
+                'exists:personas,id_persona'
+            ],
+            'id_institucion_receptora' => [
+                'sometimes',
+                'integer',
+                'exists:instituciones,id_institucion'
+            ]
+        ]);
+
+        $usuario = auth()->user();
+
         $consulta = Pasantia::with([
             'instrumento',
             'estudiante',
             'tutor',
             'institucionReceptora',
             'responsableReceptor'
-        ])->whereHas('instrumento', function ($query) {
-            $query->visiblesPara(auth()->user());
+        ])->whereHas('instrumento', function ($query) use ($usuario) {
+            $query->visiblesPara($usuario);
         });
 
-        if ($request->filled('id_instrumento')) {
-            $consulta->where('id_instrumento', $request->id_instrumento);
+        if (isset($datos['id_instrumento'])) {
+            $consulta->where(
+                'id_instrumento',
+                $datos['id_instrumento']
+            );
         }
 
-        if ($request->filled('id_persona_estudiante')) {
+        if (isset($datos['id_persona_estudiante'])) {
             $consulta->where(
                 'id_persona_estudiante',
-                $request->id_persona_estudiante
+                $datos['id_persona_estudiante']
             );
         }
 
-        if ($request->filled('id_institucion_receptora')) {
+        if (isset($datos['id_institucion_receptora'])) {
             $consulta->where(
                 'id_institucion_receptora',
-                $request->id_institucion_receptora
+                $datos['id_institucion_receptora']
             );
         }
 
-        $pasantias = $consulta->get();
+        $pasantias = $consulta
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return response()->json([
             'mensaje' => 'Pasantías obtenidas correctamente',
@@ -56,15 +83,19 @@ class PasantiaController extends Controller
     // Consultar una pasantía
     public function show($id)
     {
+        $usuario = auth()->user();
+
         $pasantia = Pasantia::with([
             'instrumento',
             'estudiante',
             'tutor',
             'institucionReceptora',
             'responsableReceptor'
-        ])->whereHas('instrumento', function ($query) {
-            $query->visiblesPara(auth()->user());
-        })->findOrFail($id);
+        ])
+            ->whereHas('instrumento', function ($query) use ($usuario) {
+                $query->visiblesPara($usuario);
+            })
+            ->findOrFail($id);
 
         $this->authorize('view', $pasantia);
 
@@ -120,6 +151,7 @@ class PasantiaController extends Controller
             ]
         ]);
 
+        // Verificar que el instrumento pertenezca al alcance del usuario.
         Instrumento::visiblesPara(auth()->user())
             ->findOrFail($datos['id_instrumento']);
 
@@ -159,7 +191,14 @@ class PasantiaController extends Controller
     // Actualizar una pasantía
     public function update(Request $request, $id)
     {
-        $pasantia = Pasantia::with('instrumento')->findOrFail($id);
+        $usuario = auth()->user();
+
+        // Buscar únicamente pasantías pertenecientes al alcance del usuario.
+        $pasantia = Pasantia::with('instrumento')
+            ->whereHas('instrumento', function ($query) use ($usuario) {
+                $query->visiblesPara($usuario);
+            })
+            ->findOrFail($id);
 
         $this->authorize('update', $pasantia);
 
@@ -205,22 +244,30 @@ class PasantiaController extends Controller
             ]
         ]);
 
+        // Verificar el alcance del instrumento nuevo, si se modifica.
         $idInstrumento = $datos['id_instrumento']
             ?? $pasantia->id_instrumento;
 
-        Instrumento::visiblesPara(auth()->user())
+        Instrumento::visiblesPara($usuario)
             ->findOrFail($idInstrumento);
 
+        // Validar las fechas considerando los valores existentes.
         $fechaInicio = $datos['fecha_inicio']
             ?? $pasantia->fecha_inicio;
 
         $fechaFin = $datos['fecha_fin']
             ?? $pasantia->fecha_fin;
 
-        if ($fechaFin < $fechaInicio) {
-            return response()->json([
-                'mensaje' => 'La fecha de finalización no puede ser anterior a la fecha de inicio.'
-            ], 422);
+        if (
+            $fechaInicio &&
+            $fechaFin &&
+            Carbon::parse($fechaFin)->lt(Carbon::parse($fechaInicio))
+        ) {
+            throw ValidationException::withMessages([
+                'fecha_fin' => [
+                    'La fecha de finalización no puede ser anterior a la fecha de inicio.'
+                ]
+            ]);
         }
 
         $camposModificados = array_keys($datos);
