@@ -121,8 +121,7 @@ export default function ConveniosPage(){
     datos.append("titulo", valor("titulo"));
     datos.append("id_tipo_instrumento", valor("tipo"));
     datos.append("id_unidad", valor("unidad-responsable"));
-
-    // [nombre que espera la API, id del campo en el formulario]
+    
     let opcionales = [
         ["objeto", "objeto"],
         ["alcance", "alcance"],
@@ -148,7 +147,6 @@ export default function ConveniosPage(){
 
     let respuesta = await registrar(datos);
 
-    // Si no vino "data", la API rechazó el registro (validación, permisos, etc.)
     if (respuesta.data == null){
         let mensaje = respuesta.errors
             ? Object.values(respuesta.errors).join("\n")
@@ -254,7 +252,7 @@ export default function ConveniosPage(){
 
             console.log("Convenios filtrados:", conveniosFiltrados);
             let tabla = document.createElement("table");
-            tabla.className = "table table-striped table-bordered rounded"
+            tabla.className = "table table-striped table-bordered rounded";
             tabla.innerHTML = "";
             tabla.innerHTML = `
             <thead>
