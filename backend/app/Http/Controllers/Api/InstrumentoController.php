@@ -245,6 +245,7 @@ class InstrumentoController extends Controller
         }
 
         $datos = $request->validate([
+            'version' => ['required', 'integer', 'min:1'],
             'codigo' => 'sometimes|required|string|max:50|unique:instrumentos,codigo,' . $id . ',id_instrumento',
             'titulo' => 'sometimes|required|string|max:255',
             'id_tipo_instrumento' => 'sometimes|required|exists:tipos_instrumento,id_tipo_instrumento',
@@ -267,6 +268,17 @@ class InstrumentoController extends Controller
 
             'plazo_preaviso' => 'nullable|integer|min:0',
         ]);
+
+        // Control optimista: rechazar cambios basados en una versión vieja.
+        if ((int) $datos['version'] !== (int) $instrumento->version) {
+            return response()->json([
+                'status' => 409,
+                'mensaje' => 'El instrumento fue modificado por otra persona. Actualizá los datos e intentá nuevamente.',
+                'version_actual' => $instrumento->version,
+            ], 409);
+        }
+
+        unset($datos['version']);
 
         // Validar que el vencimiento no sea anterior al inicio.
         $fechaInicio = $datos['fecha_inicio'] ?? $instrumento->fecha_inicio;
@@ -296,7 +308,21 @@ class InstrumentoController extends Controller
         }
 
         DB::transaction(function () use ($instrumento, $datos) {
-            $instrumento->update($datos);
+            $instrumentoBloqueado = Instrumento::whereKey($instrumento->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Revalidar dentro de la transacción para evitar actualizaciones simultáneas.
+            if ((int) $instrumentoBloqueado->version !== (int) $instrumento->version) {
+                abort(409, 'El instrumento fue modificado por otra persona. Actualizá los datos e intentá nuevamente.');
+            }
+
+            $instrumentoBloqueado->update([
+                ...$datos,
+                'version' => $instrumentoBloqueado->version + 1,
+            ]);
+
+            $instrumento->refresh();
 
             AuditoriaService::registrar(
                 'actualizar',
