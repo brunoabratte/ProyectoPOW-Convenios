@@ -33,6 +33,36 @@ if (abrir != null)
             .replace(/[-\s]/g, "_");
     }
 
+    function listarRelaciones(){
+        let opciones = document.getElementById("tipo") as HTMLSelectElement | null;
+        let formulario = document.getElementById("relaciones-convenios") as HTMLFormElement | null;
+
+        if (opciones == null || formulario == null)
+            return;
+
+        formulario.innerHTML = "";
+
+        let opcionesValor = opciones.value;
+
+        if (opcionesValor == "7"){
+            formulario.innerHTML = `
+            <input type="text" id="convenio-compatible1" class="form-control" placeholder="Convenio compatible 1">
+            <button type="button" id="agregar-compatible" class="btn btn-secondary">Agregar convenio compatible</button>
+            `;
+            formulario.querySelector("#agregar-compatible")?.addEventListener("click", () => {
+                let boton = formulario.querySelector("#agregar-compatible");
+                let cantidadElementos = formulario.querySelectorAll("input").length;
+                let input = document.createElement("input");
+                input.type = "text";
+                input.placeholder = `Convenio compatible ${cantidadElementos + 1} `;
+                input.id = `convenio-compatible${cantidadElementos + 1}`;
+                input.className = "form-control";
+
+                boton?.insertAdjacentElement("beforebegin", input);
+            });
+        }
+    }
+
     async function abrirDetalles(id : string){
         const modal = document.getElementById("ventanaDetalles") as HTMLDialogElement;
 
@@ -330,7 +360,7 @@ if (abrir != null)
                         <form className="d-flex flex-column gap-3 mb-5">
                             <input type="text" name="codigo" id="codigo" className="form-control" placeholder="Código único"/>
                             <input type="text" name="titulo" id="titulo" className="form-control" placeholder="Título"/>
-                            <select id="tipo" className="form-select" defaultValue="">
+                            <select id="tipo" className="form-select" defaultValue="" onChange={listarRelaciones}>
                                 <option value="">Tipo de instrumento</option>
                                 <option value="7">Convenio marco de colaboracion</option>
                                 <option value="8">Convenio espec&iacute;fico de colaboracion</option>
@@ -390,7 +420,7 @@ if (abrir != null)
 
                         <h4 className="titulo h4">5. Relaciones</h4>
 
-                        <form id="relaciones-convenios" className="mb-5">
+                        <form id="relaciones-convenios" className="d-flex flex-column gap-3 mb-5">
                             <p className="text-warning">Seleccione un tipo de convenio</p>
                         </form>
 

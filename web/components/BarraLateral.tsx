@@ -16,6 +16,7 @@ export default function Sidebar() {
                             href="/panel"
                             className={`opcionMenu ${pathname === "/panel" ? "activa" : ""}`}
                         >
+                            <img className="logo" src="/inicio-logo.png"/>
                             Inicio
                         </Link>
                     </li>
@@ -25,6 +26,7 @@ export default function Sidebar() {
                             href="/panel/convenios"
                             className={`opcionMenu ${pathname === "/panel/convenios" ? "activa" : ""}`}
                         >
+                            <img className="logo" src="/convenios-logo.png"/>
                             Convenios
                         </Link>
                     </li>
@@ -34,6 +36,7 @@ export default function Sidebar() {
                             href="/panel/instituciones"
                             className={`opcionMenu ${pathname === "/panel/instituciones" ? "activa" : ""}`}
                         >
+                            <img className="logo" src="/instituciones-logo.png"/>
                             Instituciones
                         </Link>
                     </li>
@@ -43,6 +46,7 @@ export default function Sidebar() {
                             href="/panel/personas"
                             className={`opcionMenu ${pathname === "/panel/personas" ? "activa" : ""}`}
                         >
+                            <img className="logo" src="/personas-logo.png"/>
                             Personas
                         </Link>
                     </li>
@@ -52,6 +56,7 @@ export default function Sidebar() {
                             href="/panel/revisiones"
                             className={`opcionMenu ${pathname === "/panel/revisiones" ? "activa" : ""}`}
                         >
+                            <img className="logo" src="/revisiones-logo.png"/>
                             Revisiones
                         </Link>
                     </li>
@@ -61,6 +66,7 @@ export default function Sidebar() {
                             href="/panel/alertas"
                             className={`opcionMenu ${pathname === "/panel/alertas" ? "activa" : ""}`}
                         >
+                            <img className="logo" src="/alertas-logo.png"/>
                             Alertas
                         </Link>
                     </li>
@@ -70,6 +76,7 @@ export default function Sidebar() {
                             href="/panel/administracion"
                             className={`opcionMenu ${pathname === "/panel/administracion" ? "activa" : ""}`}
                         >
+                            <img className="logo" src="/administracion-logo.png"/>
                             Administracion
                         </Link>
                     </li>

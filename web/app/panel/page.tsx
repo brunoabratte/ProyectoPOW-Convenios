@@ -216,7 +216,7 @@ export default function PanelPage(){
     return(
         <div className="flex-grow-1 p-4 h-100">
             <h2 className="titulo">Panel principal</h2>
-            <p className="fs-6 fw-light">Resumen de la gesti&oacute;n de convenios</p>
+            <p className="text-muted fs-6 fw-light">Resumen de la gesti&oacute;n de convenios</p>
             <div className="contenedorPrincipal">
                 <div className="contenedorCampos">
                     <div className="campoPanel">
