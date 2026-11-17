@@ -427,6 +427,7 @@ class InstrumentoController extends Controller
         $datos = $request->validate([
             'id_estado_nuevo' => 'required|exists:estados,id_estado',
             'fundamento' => 'required|string|max:1000',
+            'fecha_firma' => 'sometimes|nullable|date',
         ]);
 
         $estadoActual = $instrumento->estado->nombre;
@@ -475,10 +476,44 @@ class InstrumentoController extends Controller
                 }
             }
         }
-        // Las demás transiciones todavía no tienen un permiso
-        // definido en la matriz de roles.
+        // Gestión registra la firma del instrumento aprobado.
+        elseif ($estadoActual === 'aprobado' && $estadoNuevo->nombre === 'firmado') {
+            abort_unless(
+                Auth::user()->esGestion()
+                    && Auth::user()->puedeAccederAInstrumento($instrumento),
+                403,
+                'Solo Gestión de la unidad correspondiente puede registrar la firma.'
+            );
+
+            if (empty($datos['fecha_firma'])) {
+                throw ValidationException::withMessages([
+                    'fecha_firma' => ['La fecha de firma es obligatoria para pasar a firmado.']
+                ]);
+            }
+        }
+        // Gestión o Administración pueden rescindir.
+        elseif ($estadoActual === 'firmado' && $estadoNuevo->nombre === 'rescindido') {
+            abort_unless(
+                (Auth::user()->esGestion() || Auth::user()->esAdministracion())
+                    && Auth::user()->puedeAccederAInstrumento($instrumento),
+                403,
+                'No tenés permisos para rescindir este instrumento.'
+            );
+        }
+        // Solo Administración puede archivar.
+        elseif (
+            in_array($estadoActual, ['aprobado', 'firmado', 'rescindido'])
+            && $estadoNuevo->nombre === 'archivado'
+        ) {
+            abort_unless(
+                Auth::user()->esAdministracion()
+                    && Auth::user()->puedeAccederAInstrumento($instrumento),
+                403,
+                'Solo Administración puede archivar instrumentos.'
+            );
+        }
         else {
-            abort(403, 'Tu rol no tiene permisos definidos para realizar este cambio de estado.');
+            abort(403, 'Tu rol no tiene permisos para realizar este cambio de estado.');
         }
 
         $estadoAnterior = $instrumento->id_estado;
@@ -492,9 +527,16 @@ class InstrumentoController extends Controller
             $estadoActual,
             $usuarioId
         ) {
-            $instrumento->update([
-                'id_estado' => $datos['id_estado_nuevo']
-            ]);
+            $actualizacion = [
+                'id_estado' => $datos['id_estado_nuevo'],
+                'version' => $instrumento->version + 1,
+            ];
+
+            if ($estadoNuevo->nombre === 'firmado') {
+                $actualizacion['fecha_firma'] = $datos['fecha_firma'];
+            }
+
+            $instrumento->update($actualizacion);
 
             HistorialEstado::create([
                 'id_instrumento' => $instrumento->id_instrumento,
