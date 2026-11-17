@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InstrumentoController extends Controller
 {
@@ -59,6 +60,7 @@ class InstrumentoController extends Controller
     }
 
     // Actualizar un instrumento
+    // Actualizar un instrumento con control de concurrencia optimista
     public function update(Request $request, $id)
     {
         $instrumento = Instrumento::visiblesPara(Auth::user())
@@ -66,14 +68,10 @@ class InstrumentoController extends Controller
 
         $this->authorize('update', $instrumento);
 
-        if ($instrumento->estado->nombre !== 'borrador') {
-            return response()->json([
-                'status' => 403,
-                'mensaje' => 'Solo se pueden modificar instrumentos en estado borrador.'
-            ], 403);
-        }
-
+        // La versión es obligatoria para poder actualizar.
         $datos = $request->validate([
+            'version' => 'required|integer|min:1',
+
             'codigo' => 'sometimes|required|string|max:50|unique:instrumentos,codigo,' . $id . ',id_instrumento',
             'titulo' => 'sometimes|required|string|max:255',
             'id_tipo_instrumento' => 'sometimes|required|exists:tipos_instrumento,id_tipo_instrumento',
@@ -93,9 +91,14 @@ class InstrumentoController extends Controller
             'fecha_firma' => 'nullable|date',
             'fecha_inicio' => 'nullable|date',
             'fecha_vencimiento' => 'nullable|date',
-
             'plazo_preaviso' => 'nullable|integer|min:0',
         ]);
+
+        // Guardamos la versión enviada por el cliente.
+        $versionEnviada = (int) $datos['version'];
+
+        // La versión no se actualiza directamente desde los datos recibidos.
+        unset($datos['version']);
 
         // Validar que el vencimiento no sea anterior al inicio.
         $fechaInicio = $datos['fecha_inicio'] ?? $instrumento->fecha_inicio;
@@ -113,42 +116,86 @@ class InstrumentoController extends Controller
             ]);
         }
 
-        // Un usuario con unidad asignada no puede mover
-        // instrumentos a otra unidad.
+        // No permitir mover el instrumento a una unidad inaccesible.
         if (
             array_key_exists('id_unidad', $datos)
             && !Auth::user()->puedeAccederAUnidad((int) $datos['id_unidad'])
         ) {
             throw ValidationException::withMessages([
-                'id_unidad' => 'No tenés permisos para asignar el instrumento a esa unidad.'
+                'id_unidad' => [
+                    'No tenés permisos para asignar el instrumento a esa unidad.'
+                ]
             ]);
         }
 
-        DB::transaction(function () use ($instrumento, $datos) {
-            $instrumento->update($datos);
+        $usuarioId = Auth::id();
+
+        $instrumentoActualizado = DB::transaction(function () use (
+            $id,
+            $versionEnviada,
+            $datos,
+            $usuarioId
+        ) {
+            // Bloquear la fila mientras se realiza la actualización.
+            $instrumentoBloqueado = Instrumento::visiblesPara(Auth::user())
+                ->where('id_instrumento', $id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Verificar nuevamente los permisos y el estado.
+            $this->authorize('update', $instrumentoBloqueado);
+
+            if ($instrumentoBloqueado->estado->nombre !== 'borrador') {
+                abort(403, 'Solo se pueden modificar instrumentos en estado borrador.');
+            }
+
+            // Comparar la versión enviada con la versión actual.
+            if ((int) $instrumentoBloqueado->version !== $versionEnviada) {
+                return null;
+            }
+
+            // Actualizar los campos y aumentar la versión.
+            $instrumentoBloqueado->update([
+                ...$datos,
+                'version' => $instrumentoBloqueado->version + 1,
+            ]);
 
             AuditoriaService::registrar(
                 'actualizar',
                 'instrumentos',
-                $instrumento->id_instrumento,
+                $instrumentoBloqueado->id_instrumento,
                 [
                     'campos_modificados' => array_keys($datos),
-                    'codigo' => $instrumento->codigo,
-                    'titulo' => $instrumento->titulo
-                ]
+                    'version_anterior' => $versionEnviada,
+                    'version_nueva' => $instrumentoBloqueado->version,
+                    'codigo' => $instrumentoBloqueado->codigo,
+                    'titulo' => $instrumentoBloqueado->titulo,
+                ],
+                $usuarioId
             );
+
+            return $instrumentoBloqueado->fresh()->load([
+                'tipoInstrumento',
+                'unidad',
+                'estado'
+            ]);
         });
+
+        // Si la versión no coincide, no se guardó ningún cambio.
+        if ($instrumentoActualizado === null) {
+            return response()->json([
+                'status' => 409,
+                'mensaje' => 'El instrumento fue modificado por otro usuario. Actualizá los datos antes de volver a guardar.',
+            ], 409);
+        }
 
         return response()->json([
             'status' => 200,
             'mensaje' => 'Instrumento actualizado correctamente',
-            'data' => $instrumento->fresh()->load([
-                'tipoInstrumento',
-                'unidad',
-                'estado'
-            ])
+            'data' => $instrumentoActualizado
         ]);
     }
+
 
     // Registrar un instrumento
     public function store(Request $request)
@@ -220,56 +267,82 @@ class InstrumentoController extends Controller
             ])
         ], 201);
     }
-
+    
     // Cambiar el estado de un instrumento
     public function cambiarEstado(Request $request, $id)
     {
-        $instrumento = Instrumento::visiblesPara(Auth::user())
-            ->findOrFail($id);
-
         $datos = $request->validate([
-            'id_estado_nuevo' => 'required|exists:estados,id_estado',
+            'id_estado_nuevo' => 'required|integer|exists:estados,id_estado',
             'fundamento' => 'required|string|max:1000',
+            'fecha_firma' => 'nullable|date',
         ]);
 
-        $estadoActual = $instrumento->estado->nombre;
-        $estadoNuevo = Estado::findOrFail($datos['id_estado_nuevo']);
+        $usuario = Auth::user();
 
-        $transicionesPermitidas = [
-            'borrador' => ['revision'],
-            'revision' => ['borrador', 'aprobado'],
-            'aprobado' => ['firmado'],
-            'firmado' => ['rescindido', 'archivado'],
-            'rescindido' => ['archivado'],
-            'archivado' => [],
-        ];
-
-        if (!in_array(
-            $estadoNuevo->nombre,
-            $transicionesPermitidas[$estadoActual] ?? []
-        )) {
-            return response()->json([
-                'status' => 422,
-                'mensaje' => "No está permitido pasar de {$estadoActual} a {$estadoNuevo->nombre}."
-            ], 422);
-        }
-
-        // Gestión puede enviar un borrador a revisión.
-        if ($estadoActual === 'borrador' && $estadoNuevo->nombre === 'revision') {
-            $this->authorize('update', $instrumento);
-        }
-        // Revisión puede aprobar o devolver para corrección.
-        elseif (
-            $estadoActual === 'revision'
-            && in_array($estadoNuevo->nombre, ['borrador', 'aprobado'])
+        $resultado = DB::transaction(function () use (
+            $id,
+            $datos,
+            $usuario
         ) {
-            $this->authorize('gestionarRevision', $instrumento);
+            // Buscar y bloquear el instrumento.
+            $instrumento = Instrumento::visiblesPara($usuario)
+                ->where('id_instrumento', $id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            // Para aprobar, el instrumento debe tener al menos dos partes.
-            if ($estadoNuevo->nombre === 'aprobado') {
-                $cantidadPartes = $instrumento->partes()->count();
+            $estadoActual = $instrumento->estado->nombre;
 
-                if ($cantidadPartes < 2) {
+            $estadoNuevo = Estado::findOrFail(
+                $datos['id_estado_nuevo']
+            );
+
+            $nombreEstadoNuevo = $estadoNuevo->nombre;
+
+            // Definir las transiciones permitidas.
+            $transicionesPermitidas = [
+                'borrador' => ['revision'],
+                'revision' => ['borrador', 'aprobado'],
+                'aprobado' => ['firmado', 'archivado'],
+                'firmado' => ['rescindido', 'archivado'],
+                'rescindido' => ['archivado'],
+                'archivado' => [],
+            ];
+
+            if (!in_array(
+                $nombreEstadoNuevo,
+                $transicionesPermitidas[$estadoActual] ?? []
+            )) {
+                return [
+                    'error' => true,
+                    'status' => 422,
+                    'mensaje' => "No está permitido pasar de {$estadoActual} a {$nombreEstadoNuevo}."
+                ];
+            }
+
+            // BORRADOR -> REVISION: requiere Gestión.
+            if (
+                $estadoActual === 'borrador' &&
+                $nombreEstadoNuevo === 'revision'
+            ) {
+                if (!$usuario->esGestion()) {
+                    abort(403, 'Solo Gestión puede enviar instrumentos a revisión.');
+                }
+            }
+
+            // REVISION -> BORRADOR o APROBADO: requiere Revisión.
+            elseif (
+                $estadoActual === 'revision' &&
+                in_array($nombreEstadoNuevo, ['borrador', 'aprobado'])
+            ) {
+                if (!$usuario->esRevision()) {
+                    abort(403, 'Solo Revisión puede aprobar o devolver instrumentos.');
+                }
+
+                // Para aprobar deben existir al menos dos partes.
+                if (
+                    $nombreEstadoNuevo === 'aprobado' &&
+                    $instrumento->partes()->count() < 2
+                ) {
                     throw ValidationException::withMessages([
                         'partes' => [
                             'No se puede aprobar el instrumento porque debe tener al menos dos partes registradas.'
@@ -277,56 +350,115 @@ class InstrumentoController extends Controller
                     ]);
                 }
             }
-        }
-        // Las demás transiciones todavía no tienen un permiso
-        // definido en la matriz de roles.
-        else {
-            abort(403, 'Tu rol no tiene permisos definidos para realizar este cambio de estado.');
-        }
 
-        $estadoAnterior = $instrumento->id_estado;
-        $usuarioId = Auth::id();
+            // APROBADO -> FIRMADO: requiere Gestión y fecha de firma.
+            elseif (
+                $estadoActual === 'aprobado' &&
+                $nombreEstadoNuevo === 'firmado'
+            ) {
+                if (!$usuario->esGestion()) {
+                    abort(403, 'Solo Gestión puede registrar la firma.');
+                }
 
-        DB::transaction(function () use (
-            $instrumento,
-            $datos,
-            $estadoAnterior,
-            $estadoNuevo,
-            $estadoActual,
-            $usuarioId
-        ) {
-            $instrumento->update([
-                'id_estado' => $datos['id_estado_nuevo']
-            ]);
+                if (empty($datos['fecha_firma'])) {
+                    throw ValidationException::withMessages([
+                        'fecha_firma' => [
+                            'La fecha de firma es obligatoria para pasar a firmado.'
+                        ]
+                    ]);
+                }
+            }
 
+            // FIRMADO -> RESCINDIDO: Gestión o Administración.
+            elseif (
+                $estadoActual === 'firmado' &&
+                $nombreEstadoNuevo === 'rescindido'
+            ) {
+                if (
+                    !$usuario->esGestion() &&
+                    !$usuario->esAdministracion()
+                ) {
+                    abort(403, 'Solo Gestión o Administración pueden rescindir instrumentos.');
+                }
+            }
+
+            // APROBADO/FIRMADO/RESCINDIDO -> ARCHIVADO:
+            // requiere Administración.
+            elseif ($nombreEstadoNuevo === 'archivado') {
+                if (!$usuario->esAdministracion()) {
+                    abort(403, 'Solo Administración puede archivar instrumentos.');
+                }
+            }
+
+            $estadoAnteriorId = $instrumento->id_estado;
+
+            // Actualizar el estado y aumentar la versión.
+            $actualizacion = [
+                'id_estado' => $estadoNuevo->id_estado,
+                'version' => $instrumento->version + 1,
+            ];
+
+            // Registrar fecha de firma cuando corresponda.
+            if (
+                $estadoActual === 'aprobado' &&
+                $nombreEstadoNuevo === 'firmado'
+            ) {
+                $actualizacion['fecha_firma'] = $datos['fecha_firma'];
+            }
+
+            $instrumento->update($actualizacion);
+
+            // Registrar el historial del cambio.
             HistorialEstado::create([
                 'id_instrumento' => $instrumento->id_instrumento,
-                'id_estado_anterior' => $estadoAnterior,
-                'id_estado_nuevo' => $datos['id_estado_nuevo'],
-                'id_usuario' => $usuarioId,
+                'id_estado_anterior' => $estadoAnteriorId,
+                'id_estado_nuevo' => $estadoNuevo->id_estado,
+                'id_usuario' => $usuario->id_usuario,
                 'fundamento' => $datos['fundamento'],
             ]);
 
+            // Registrar auditoría.
             AuditoriaService::registrar(
                 'cambiar_estado',
                 'instrumentos',
                 $instrumento->id_instrumento,
                 [
                     'estado_anterior' => $estadoActual,
-                    'estado_nuevo' => $estadoNuevo->nombre,
-                    'fundamento' => $datos['fundamento']
+                    'estado_nuevo' => $nombreEstadoNuevo,
+                    'fundamento' => $datos['fundamento'],
+                    'version_nueva' => $instrumento->version,
                 ],
-                $usuarioId
+                $usuario->id_usuario
             );
+
+            return [
+                'error' => false,
+                'instrumento' => $instrumento->fresh()->load([
+                    'tipoInstrumento',
+                    'unidad',
+                    'estado'
+                ]),
+                'historial' => $instrumento->historialEstados()
+                    ->latest()
+                    ->first()
+            ];
         });
+
+        if ($resultado['error']) {
+            return response()->json([
+                'status' => $resultado['status'],
+                'mensaje' => $resultado['mensaje'],
+            ], $resultado['status']);
+        }
 
         return response()->json([
             'status' => 200,
             'mensaje' => 'Estado actualizado correctamente.',
-            'data' => $instrumento->fresh()->load('estado'),
-            'historial' => $instrumento->historialEstados()->latest()->first()
+            'data' => $resultado['instrumento'],
+            'historial' => $resultado['historial'],
         ]);
     }
+
 
     // Consultar historial de estados de un instrumento
     public function historial($id)
@@ -351,4 +483,159 @@ class InstrumentoController extends Controller
             'data' => $historial
         ]);
     }
+
+
+    /**
+     * Exportar instrumentos a un archivo CSV.
+     */
+    public function exportar(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Instrumento::class);
+
+        $filtros = $request->validate([
+            'q' => 'nullable|string|max:255',
+            'tipo_instrumento_id' => 'nullable|integer|exists:tipos_instrumento,id_tipo_instrumento',
+            'estado_id' => 'nullable|integer|exists:estados,id_estado',
+            'id_unidad' => 'nullable|integer|exists:unidades,id_unidad',
+            'fecha_desde' => 'nullable|date',
+            'fecha_hasta' => 'nullable|date|after_or_equal:fecha_desde',
+        ]);
+
+        // Se respeta el alcance de unidades del usuario.
+        $consulta = Instrumento::visiblesPara(Auth::user())
+            ->with([
+                'tipoInstrumento',
+                'unidad',
+                'estado'
+            ]);
+
+        if (!empty($filtros['q'])) {
+            $termino = $filtros['q'];
+
+            $consulta->where(function ($query) use ($termino) {
+                $query->where('codigo', 'like', "%{$termino}%")
+                    ->orWhere('titulo', 'like', "%{$termino}%");
+            });
+        }
+
+        if (!empty($filtros['tipo_instrumento_id'])) {
+            $consulta->where(
+                'id_tipo_instrumento',
+                $filtros['tipo_instrumento_id']
+            );
+        }
+
+        if (!empty($filtros['estado_id'])) {
+            $consulta->where('id_estado', $filtros['estado_id']);
+        }
+
+        if (!empty($filtros['id_unidad'])) {
+            $consulta->where('id_unidad', $filtros['id_unidad']);
+        }
+
+        if (!empty($filtros['fecha_desde'])) {
+            $consulta->whereDate(
+                'fecha_firma',
+                '>=',
+                $filtros['fecha_desde']
+            );
+        }
+
+        if (!empty($filtros['fecha_hasta'])) {
+            $consulta->whereDate(
+                'fecha_firma',
+                '<=',
+                $filtros['fecha_hasta']
+            );
+        }
+
+        $usuarioId = Auth::id();
+
+        return response()->streamDownload(function () use ($consulta, $filtros, $usuarioId) {
+
+            $archivo = fopen('php://output', 'w');
+
+            // BOM para que Excel interprete correctamente UTF-8.
+            fwrite($archivo, "\xEF\xBB\xBF");
+
+            // Encabezados.
+            fputcsv($archivo, [
+                'ID',
+                'Código',
+                'Título',
+                'Tipo de instrumento',
+                'Unidad',
+                'Estado',
+                'Fecha de firma',
+                'Fecha de inicio',
+                'Fecha de vencimiento',
+                'Vigencia'
+            ], ';');
+
+            $cantidad = 0;
+
+            $consulta->orderBy('id_instrumento')
+                ->chunk(500, function ($instrumentos) use ($archivo, &$cantidad) {
+
+                    foreach ($instrumentos as $instrumento) {
+
+                        $fila = [
+                            $instrumento->id_instrumento,
+                            $instrumento->codigo,
+                            $instrumento->titulo,
+                            $instrumento->tipoInstrumento?->nombre,
+                            $instrumento->unidad?->nombre,
+                            $instrumento->estado?->nombre,
+                            $instrumento->fecha_firma,
+                            $instrumento->fecha_inicio,
+                            $instrumento->fecha_vencimiento,
+                            $instrumento->fecha_vencimiento
+                                ?? 'sin vencimiento registrado'
+                        ];
+
+                        // Evitar fórmulas maliciosas en archivos CSV.
+                        $fila = array_map(
+                            fn ($valor) => $this->protegerCeldaCsv($valor),
+                            $fila
+                        );
+
+                        fputcsv($archivo, $fila, ';');
+
+                        $cantidad++;
+                    }
+                });
+
+            fclose($archivo);
+
+            AuditoriaService::registrar(
+                'exportar',
+                'instrumentos',
+                null,
+                [
+                    'filtros' => $filtros,
+                    'cantidad_exportada' => $cantidad
+                ],
+                $usuarioId
+            );
+
+        }, 'instrumentos.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    /**
+     * Evitar inyección de fórmulas en celdas CSV.
+     */
+    private function protegerCeldaCsv($valor): string
+    {
+        $valor = (string) ($valor ?? '');
+
+        if (preg_match('/^[=+\-@\t\r]/', $valor)) {
+            return "'" . $valor;
+        }
+
+        return $valor;
+    }
+
+
 }

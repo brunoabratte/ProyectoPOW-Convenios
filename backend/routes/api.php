@@ -15,6 +15,10 @@ use App\Http\Controllers\Api\DocumentoController;
 use App\Http\Controllers\Api\ObservacionController;
 use App\Http\Controllers\Api\AuditoriaController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\AlertaController;
+use App\Http\Controllers\Api\CatalogoController;
+use App\Http\Controllers\Api\UsuarioController;
 
 // Inicio de sesión: única ruta pública
 Route::post('/login', [AuthController::class, 'login']);
@@ -31,6 +35,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Instrumentos
+    // Las rutas fijas deben declararse antes de /instrumentos/{id}.
+    Route::get('/instrumentos/exportar', [InstrumentoController::class, 'exportar']);
     Route::get('/instrumentos', [InstrumentoController::class, 'index']);
     Route::post('/instrumentos', [InstrumentoController::class, 'store']);
     Route::get('/instrumentos/{id}', [InstrumentoController::class, 'show']);
@@ -92,4 +98,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auditorias', [AuditoriaController::class, 'index']);
     Route::get('/auditorias/{id}', [AuditoriaController::class, 'show']);
 
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    // Alertas
+    Route::get('/alertas', [AlertaController::class, 'index']);
+
+    // Catálogos
+    Route::get('/catalogos/unidades', [CatalogoController::class, 'unidades']);
+    Route::get('/catalogos/tipos-instrumento', [CatalogoController::class, 'tiposInstrumento']);
+    Route::get('/catalogos/estados', [CatalogoController::class, 'estados']);
+
+    
+    // Usuarios
+    Route::get('/usuarios', [UsuarioController::class, 'index']);
+    Route::post('/usuarios', [UsuarioController::class, 'store']);
+    Route::put('/usuarios/{id}', [UsuarioController::class, 'update']);
+    Route::patch('/usuarios/{id}/activo', [UsuarioController::class, 'cambiarActivo']);
 });
