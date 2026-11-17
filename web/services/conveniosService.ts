@@ -171,3 +171,34 @@ export async function obtenerParticipaciones(){
 
     return await res.json();
 }
+
+export async function registrarRelacion(datos: FormData) {
+    const token = localStorage.getItem("token");
+
+    const respuesta = await fetch(url + `instrumentos-relaciones`, {
+        method: "POST",
+        headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: datos,
+    });
+
+    return await respuesta.json();
+}
+
+export async function obtenerRelacionesPorInstrumento(idInstrumento: string) {
+    const token = localStorage.getItem("token");
+
+    const respuesta = await fetch(
+        url + `instrumentos-relaciones?id_instrumento=${idInstrumento}`,
+        {
+            headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    return await respuesta.json();
+}

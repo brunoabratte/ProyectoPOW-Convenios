@@ -3,6 +3,7 @@
 import { obtenerConvenioEspecifico, obtenerConvenios, registrar, registrarParte, subirDocumento } from "@/services/conveniosService";
 import { verificarSesion } from "@/services/authService";
 import { useEffect } from "react";
+import { registrarRelacion } from "@/services/conveniosService";
 
 export default function ConveniosPage(){
     useEffect(() => {
@@ -33,34 +34,89 @@ if (abrir != null)
             .replace(/[-\s]/g, "_");
     }
 
-    function listarRelaciones(){
-        let opciones = document.getElementById("tipo") as HTMLSelectElement | null;
-        let formulario = document.getElementById("relaciones-convenios") as HTMLFormElement | null;
-
-        if (opciones == null || formulario == null)
-            return;
+    async function listarRelaciones() {
+        const opciones = document.getElementById("tipo") as HTMLSelectElement | null;
+        const formulario = document.getElementById("relaciones-convenios") as HTMLFormElement | null;
+        if (!opciones || !formulario) return;
 
         formulario.innerHTML = "";
+        const tipo = opciones.value;
 
-        let opcionesValor = opciones.value;
+        if (tipo === "") {
+            formulario.innerHTML = `<p class="text-warning">Seleccione un tipo de convenio</p>`;
+            return;
+        }
 
-        if (opcionesValor == "7"){
+        const resp = await obtenerConvenios();
+        const convenios: any[] = resp.status === 200 ? resp.data : [];
+
+        // 1. Específicos (8 = Colaboración, 10 = Pasantía) -> tipo_relacion: "especifico_de"
+        if (tipo === "8" || tipo === "10") {
+            const idMarcoCompatible = tipo === "8" ? 7 : 9;
+            const marcos = convenios.filter(c => Number(c.id_tipo_instrumento) === idMarcoCompatible);
+
+            const opcionesHtml = marcos.length > 0
+                ? marcos.map(m => `<option value="${m.id_instrumento}">${m.codigo} - ${m.titulo}</option>`).join("")
+                : `<option value="">No hay convenios marco compatibles registrados</option>`;
+
             formulario.innerHTML = `
-            <input type="text" id="convenio-compatible1" class="form-control" placeholder="Convenio compatible 1">
-            <button type="button" id="agregar-compatible" class="btn btn-secondary">Agregar convenio compatible</button>
+                <label class="form-label">Convenio(s) Marco compatible(s)</label>
+                <select class="form-select relacion-select" data-tipo-relacion="especifico_de">
+                    <option value="">Seleccione un convenio marco...</option>
+                    ${opcionesHtml}
+                </select>
+                <button type="button" id="agregar-compatible" class="btn btn-secondary">
+                    + Agregar otro marco compatible
+                </button>
             `;
-            formulario.querySelector("#agregar-compatible")?.addEventListener("click", () => {
-                let boton = formulario.querySelector("#agregar-compatible");
-                let cantidadElementos = formulario.querySelectorAll("input").length;
-                let input = document.createElement("input");
-                input.type = "text";
-                input.placeholder = `Convenio compatible ${cantidadElementos + 1} `;
-                input.id = `convenio-compatible${cantidadElementos + 1}`;
-                input.className = "form-control";
 
-                boton?.insertAdjacentElement("beforebegin", input);
+            formulario.querySelector("#agregar-compatible")?.addEventListener("click", () => {
+                const boton = formulario.querySelector("#agregar-compatible");
+                const nuevoSelect = document.createElement("select");
+                nuevoSelect.className = "form-select relacion-select";
+                nuevoSelect.dataset.tipoRelacion = "especifico_de";
+                nuevoSelect.innerHTML = `<option value="">Seleccione otro convenio marco...</option>${opcionesHtml}`;
+                boton?.insertAdjacentElement("beforebegin", nuevoSelect);
             });
         }
+
+        // 2. Adenda (4) -> tipo_relacion: "modifica"
+        if (tipo === "4") {
+            const opcionesHtml = convenios
+                .map(c => `<option value="${c.id_instrumento}">${c.codigo} - ${c.titulo}</option>`)
+                .join("");
+
+            formulario.innerHTML = `
+                <label class="form-label">Instrumento que modifica esta adenda</label>
+                <select class="form-select relacion-select" data-tipo-relacion="modifica">
+                    <option value="">Seleccione el convenio a modificar...</option>
+                    ${opcionesHtml}
+                </select>
+            `;
+        }
+
+        // 3. Antecedente opcional -> tipo_relacion: "renueva" o "sustituye"
+        const todosHtml = convenios
+            .map(c => `<option value="${c.id_instrumento}">${c.codigo} - ${c.titulo}</option>`)
+            .join("");
+
+        formulario.insertAdjacentHTML("beforeend", `
+            <div class="mt-2 border-top pt-2 d-flex flex-column gap-2">
+                <label class="form-label">¿Es renovación o sustitución de un convenio anterior? (Opcional)</label>
+                <div class="d-flex gap-2">
+                    <select id="tipo-antecedente" class="form-select">
+                        <option value="">No aplica</option>
+                        <option value="renueva">Renueva a...</option>
+                        <option value="sustituye">Sustituye a...</option>
+                    </select>
+                    <select id="id-antecedente" class="form-select">
+                        <option value="">Seleccione antecedente...</option>
+                        ${todosHtml}
+                    </select>
+                </div>
+                <input type="text" id="descripcion-relacion" class="form-control" placeholder="Descripción o motivo del vínculo (opcional)">
+            </div>
+        `);
     }
 
     async function abrirDetalles(id : string){
@@ -193,6 +249,46 @@ if (abrir != null)
 
     let idInstrumento = String(respuesta.data.id_instrumento);
     let avisos = "";
+
+    let selectsRelacion = document.querySelectorAll<HTMLSelectElement>("#relaciones-convenios .relacion-select");
+    let relacionadosEnviados = new Set<string>();
+    let descripcionRelacion = valor("descripcion-relacion");
+
+    for (let i = 0; i < selectsRelacion.length; i++) {
+       let idDestino = selectsRelacion[i].value;
+       if (idDestino === "" || relacionadosEnviados.has(idDestino))
+           continue;
+       
+        relacionadosEnviados.add(idDestino);
+
+        let relacion = new FormData();
+        relacion.append("id_instrumento_origen", idInstrumento);
+        relacion.append("id_instrumento_destino", idDestino);
+        relacion.append("tipo_relacion", selectsRelacion[i].dataset.tipoRelacion ?? "especifico_de");
+        if (descripcionRelacion !== "")
+            relacion.append("descripcion", descripcionRelacion);
+
+        let resRelacion = await registrarRelacion(relacion);
+        if (resRelacion.datos == null)
+            avisos += "\n- No se pudo registrar una de las relaciones con convenio marco/modificado";
+    }
+
+// Antecedente (renueva / sustituye)
+    let tipoAntecedente = valor("tipo-antecedente");
+    let idAntecedente = valor("id-antecedente");
+
+    if (tipoAntecedente !== "" && idAntecedente !== "") {
+        let antecedente = new FormData();
+        antecedente.append("id_instrumento_origen", idInstrumento);
+        antecedente.append("id_instrumento_destino", idAntecedente);
+        antecedente.append("tipo_relacion", tipoAntecedente);
+        if (descripcionRelacion !== "")
+            antecedente.append("descripcion", descripcionRelacion);
+
+        let resAntecedente = await registrarRelacion(antecedente);
+        if (resAntecedente.datos == null)
+            avisos += "\n- No se pudo registrar el antecedente (" + tipoAntecedente + ")";
+    }
 
     // 3. Partes (instituciones firmantes)
     let instituciones = [valor("primera-institucion"), valor("segunda-institucion")];
