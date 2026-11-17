@@ -70,10 +70,9 @@ class UsuarioController extends Controller
         ]);
 
         AuditoriaService::registrar(
-            Auth::id(),
-            'crear_usuario',
-            'usuarios',
-            $usuario->id_usuario
+        'crear_usuario',
+        'usuarios',
+        $usuario->id_usuario
         );
 
         return response()->json([
@@ -126,8 +125,7 @@ class UsuarioController extends Controller
         $usuario->update($datos);
 
         AuditoriaService::registrar(
-            Auth::id(),
-            'modificar_usuario',
+            'crear_usuario',
             'usuarios',
             $usuario->id_usuario
         );
@@ -165,7 +163,6 @@ class UsuarioController extends Controller
         ]);
 
         AuditoriaService::registrar(
-            Auth::id(),
             $datos['activo'] ? 'activar_usuario' : 'desactivar_usuario',
             'usuarios',
             $usuario->id_usuario
