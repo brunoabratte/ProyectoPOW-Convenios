@@ -7,6 +7,12 @@ import { useEffect } from "react";
 export default function ConveniosPage(){
     useEffect(() => {
         verificarSesion();
+
+        let parametros = new URLSearchParams(window.location.search);
+        let abrir = parametros.get("abrir");
+
+if (abrir != null)
+    abrirDetalles(abrir);
     }, []);
 
     function abrirModal() {

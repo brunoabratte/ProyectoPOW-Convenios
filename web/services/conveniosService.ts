@@ -157,3 +157,17 @@ export async function descargarDocumento(id : string, nombre : string){
 
     return true;
 }
+
+export async function obtenerParticipaciones(){
+    let token = localStorage.getItem("token");
+
+    let res = await fetch(url + "participaciones-personas", {
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    return await res.json();
+}
