@@ -31,6 +31,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Instrumentos
+    // Las rutas fijas deben declararse antes de /instrumentos/{id}.
+    Route::get('/instrumentos/exportar', [InstrumentoController::class, 'exportar']);
     Route::get('/instrumentos', [InstrumentoController::class, 'index']);
     Route::post('/instrumentos', [InstrumentoController::class, 'store']);
     Route::get('/instrumentos/{id}', [InstrumentoController::class, 'show']);
