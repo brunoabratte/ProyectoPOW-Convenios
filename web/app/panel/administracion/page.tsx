@@ -113,7 +113,6 @@ export default function AdministracionPage(){
         for (let i = 0; i < datos.data.length; i++) {
             let a = datos.data[i];
 
-            // El detalle es un objeto con datos de la acción
             let detalle = JSON.stringify(a.detalle ?? {}, null, 2);
             let htmlDetalle = (detalle === "{}" || detalle === "[]")
                 ? "-"
