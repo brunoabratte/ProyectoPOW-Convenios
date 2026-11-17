@@ -10,29 +10,200 @@ use App\Services\AuditoriaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 class InstrumentoController extends Controller
 {
-    // Listar instrumentos
-    public function index()
+    // Listar instrumentos con filtros y paginación.
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Instrumento::class);
 
-        $instrumentos = Instrumento::visiblesPara(Auth::user())
-            ->with([
-                'tipoInstrumento',
-                'unidad',
-                'estado'
-            ])
-            ->get();
+        $filtros = $this->validarFiltros($request);
+
+        $instrumentos = $this->consultaFiltrada($filtros)
+            ->with(['tipoInstrumento', 'unidad', 'estado'])
+            ->orderBy('id_instrumento')
+            ->paginate($filtros['per_page'] ?? 15);
+
+        $instrumentos->getCollection()->transform(function ($instrumento) {
+            $instrumento->setAttribute(
+                'vigencia',
+                $instrumento->fecha_vencimiento
+                    ? $instrumento->fecha_vencimiento
+                    : 'sin vencimiento registrado'
+            );
+
+            return $instrumento;
+        });
 
         return response()->json([
             'status' => 200,
             'mensaje' => 'Instrumentos obtenidos correctamente',
-            'data' => $instrumentos
+            'data' => $instrumentos->items(),
+            'paginacion' => [
+                'pagina_actual' => $instrumentos->currentPage(),
+                'por_pagina' => $instrumentos->perPage(),
+                'total' => $instrumentos->total(),
+                'ultima_pagina' => $instrumentos->lastPage(),
+            ],
         ]);
+    }
+
+    // Exportar instrumentos visibles para el usuario en formato CSV.
+    public function exportar(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Instrumento::class);
+
+        $filtros = $this->validarFiltros($request);
+        $query = $this->consultaFiltrada($filtros)
+            ->with(['tipoInstrumento', 'unidad', 'estado'])
+            ->orderBy('id_instrumento');
+
+        AuditoriaService::registrar(
+            'exportar',
+            'instrumentos',
+            null,
+            [
+                'formato' => 'CSV',
+                'filtros' => $filtros,
+                'cantidad' => (clone $query)->count(),
+            ]
+        );
+
+        $nombreArchivo = 'instrumentos_' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload(function () use ($query) {
+            $salida = fopen('php://output', 'w');
+
+            // BOM para que Excel interprete correctamente UTF-8.
+            fwrite($salida, "\xEF\xBB\xBF");
+
+            fputcsv($salida, [
+                'ID',
+                'Código',
+                'Título',
+                'Tipo de instrumento',
+                'Unidad',
+                'Estado',
+                'Fecha de firma',
+                'Fecha de inicio',
+                'Fecha de vencimiento',
+                'Vigencia',
+            ], ',', '"', '\\');
+
+            $query->chunkById(500, function ($instrumentos) use ($salida) {
+                foreach ($instrumentos as $instrumento) {
+                    $fila = [
+                        $instrumento->id_instrumento,
+                        $instrumento->codigo,
+                        $instrumento->titulo,
+                        $instrumento->tipoInstrumento?->nombre,
+                        $instrumento->unidad?->nombre,
+                        $instrumento->estado?->nombre,
+                        $instrumento->fecha_firma,
+                        $instrumento->fecha_inicio,
+                        $instrumento->fecha_vencimiento,
+                        $instrumento->fecha_vencimiento
+                            ? $instrumento->fecha_vencimiento
+                            : 'sin vencimiento registrado',
+                    ];
+
+                    $fila = array_map(
+                        fn ($valor) => $this->neutralizarCeldaCsv($valor),
+                        $fila
+                    );
+
+                    fputcsv($salida, $fila, ',', '"', '\\');
+                }
+            }, 'id_instrumento', 'id_instrumento');
+
+            fclose($salida);
+        }, $nombreArchivo, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+        ]);
+    }
+
+    // Valida los filtros compartidos por el listado y la exportación.
+    private function validarFiltros(Request $request): array
+    {
+        return $request->validate([
+            'q' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'tipo_instrumento_id' => [
+                'sometimes', 'nullable', 'integer',
+                'exists:tipos_instrumento,id_tipo_instrumento',
+            ],
+            'estado_id' => [
+                'sometimes', 'nullable', 'integer',
+                'exists:estados,id_estado',
+            ],
+            'id_unidad' => [
+                'sometimes', 'nullable', 'integer',
+                'exists:unidades,id_unidad',
+            ],
+            'fecha_desde' => ['sometimes', 'nullable', 'date'],
+            'fecha_hasta' => [
+                'sometimes', 'nullable', 'date',
+                'after_or_equal:fecha_desde',
+            ],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+        ]);
+    }
+
+    // Construye una consulta respetando siempre el alcance del usuario.
+    private function consultaFiltrada(array $filtros)
+    {
+        $query = Instrumento::visiblesPara(Auth::user());
+
+        if (!empty($filtros['q'])) {
+            $termino = trim($filtros['q']);
+
+            $query->where(function ($subconsulta) use ($termino) {
+                $subconsulta
+                    ->where('codigo', 'like', '%' . $termino . '%')
+                    ->orWhere('titulo', 'like', '%' . $termino . '%');
+            });
+        }
+
+        if (!empty($filtros['tipo_instrumento_id'])) {
+            $query->where(
+                'id_tipo_instrumento',
+                $filtros['tipo_instrumento_id']
+            );
+        }
+
+        if (!empty($filtros['estado_id'])) {
+            $query->where('id_estado', $filtros['estado_id']);
+        }
+
+        if (!empty($filtros['id_unidad'])) {
+            $query->where('id_unidad', $filtros['id_unidad']);
+        }
+
+        if (!empty($filtros['fecha_desde'])) {
+            $query->whereDate('fecha_firma', '>=', $filtros['fecha_desde']);
+        }
+
+        if (!empty($filtros['fecha_hasta'])) {
+            $query->whereDate('fecha_firma', '<=', $filtros['fecha_hasta']);
+        }
+
+        return $query;
+    }
+
+    // Evita que una celda CSV sea interpretada como fórmula por una planilla.
+    private function neutralizarCeldaCsv($valor): string
+    {
+        $valor = (string) ($valor ?? '');
+
+        if ($valor !== '' && preg_match('/^[=+@\\-\\t\\r]/', $valor)) {
+            return "'" . $valor;
+        }
+
+        return $valor;
     }
 
     // Consultar un instrumento específico
