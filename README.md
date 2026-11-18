@@ -3,8 +3,6 @@
 Trabajo Práctico Integrador de **Programación Orientada a la Web**
 Facultad de Ingeniería · Universidad Nacional de La Pampa · Analista Programador / Ingeniería en Sistemas
 
-> ⚠️ Proyecto académico. Trabaja **exclusivamente con datos ficticios**. No incluye firma digital, validación jurídica, OCR, envío de correos ni conexión con sistemas reales de la Universidad.
-
 ---
 
 ## 📌 Descripción
@@ -193,10 +191,11 @@ cd web && npm test
 
 ## 👨‍💻 Equipo
 
-| Integrante | Rol / Responsabilidad |
-|---|---|
-| Bruno Abratte | Desarrollo web *(completar)* |
-| *(completar)* | *(completar)* |
+| Integrante |
+|---|
+| Bruno Abratte |
+| Franco Azcona |
+| Tomás Ruiz |
 
 ## 📚 Documentación del proyecto
 
@@ -205,10 +204,6 @@ cd web && npm test
 - Documentación de la API REST
 - Prototipos y archivos de diseño
 - Manual breve de uso
-
-## 📅 Entrega
-
-Presentación grupal: **18 y 19 de noviembre de 2026**.
 
 ---
 
