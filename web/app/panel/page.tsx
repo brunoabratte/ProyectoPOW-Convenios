@@ -178,21 +178,65 @@ export default function PanelPage(){
                 for (let i = 0; i < recientes.length; i++) {
                     let c = recientes[i];
 
+                    let estado = String(c.estado?.nombre ?? "sin estado")
+                        .toLowerCase();
+
+                    let claseEstado = "estadoNeutral";
+                    let textoEstado = estado.replace(/_/g, " ");
+
+                    if (estado === "aprobado" || estado === "firmado") {
+                        claseEstado = "estadoAprobado";
+                        textoEstado = estado.charAt(0).toUpperCase() + estado.slice(1);
+                    }
+                    else if (estado === "revision") {
+                        claseEstado = "estadoRevision";
+                        textoEstado = "En revisión";
+                    }
+                    else if (estado === "borrador") {
+                        claseEstado = "estadoBorrador";
+                        textoEstado = "Borrador";
+                    }
+                    else if (estado === "rechazado") {
+                        claseEstado = "estadoRechazado";
+                        textoEstado = "Rechazado";
+                    }
+
                     lista += `
-                    <li class="mb-2">
-                        <strong>${escapar(c.codigo)}</strong> - ${escapar(c.titulo)}<br>
-                        <small>
-                            ${escapar(String(c.tipo_instrumento?.nombre ?? "").replace(/_/g, " "))} |
-                            ${escapar(c.unidad?.nombre)} |
-                            ${escapar(c.estado?.nombre)} |
-                            ${textoVigencia(c)}
-                        </small><br>
-                        <a href="/panel/convenios?abrir=${c.id_instrumento}">Ver convenio</a>
-                    </li>
+                        <div class="convenioReciente">
+
+                            <div class="convenioRecienteSuperior">
+                                <strong class="convenioRecienteCodigo">
+                                    ${escapar(c.codigo)}
+                                </strong>
+
+                                <span class="etiquetaEstado ${claseEstado}">
+                                    ${escapar(textoEstado)}
+                                </span>
+                            </div>
+
+                            <h4 class="convenioRecienteTitulo">
+                                ${escapar(c.titulo)}
+                            </h4>
+
+                            <p class="convenioRecienteDatos">
+                                ${escapar(String(c.tipo_instrumento?.nombre ?? "").replace(/_/g, " "))}
+                                <span>·</span>
+                                ${escapar(c.unidad?.nombre)}
+                            </p>
+
+                            <div class="convenioRecienteInferior">
+                                <small>${escapar(textoVigencia(c))}</small>
+
+                                <a href="/panel/convenios?abrir=${encodeURIComponent(c.id_instrumento)}">
+                                    Ver convenio →
+                                </a>
+                            </div>
+
+                        </div>
                     `;
                 }
 
-                contenedorRecientes.innerHTML = `<ul class="list-unstyled mb-0">${lista}</ul>`;
+                contenedorRecientes.innerHTML = lista;
             }
         }
 
@@ -213,50 +257,79 @@ export default function PanelPage(){
             poner("numero-instituciones", instituciones.data.length);
     }
 
-    return(
-        <div className="flex-grow-1 p-4 h-100">
-            <h2 className="titulo">Panel principal</h2>
-            <p className="text-muted fs-6 fw-light">Resumen de la gesti&oacute;n de convenios</p>
-            <div className="contenedorPrincipal">
-                <div className="contenedorCampos">
-                    <div className="campoPanel">
-                        <p className="tituloCampo">Firmados</p>
-                        <p className="numero" id="numero-firmados">-</p>
-                    </div>
-                    <div className="campoPanel">
-                        <p className="tituloCampo">Vigentes</p>
-                        <p className="numero" id="numero-vigentes">-</p>
-                    </div>
-                    <div className="campoPanel">
-                        <p className="tituloCampo">En revisi&oacute;n</p>
-                        <p className="numero" id="numero-revision">-</p>
-                    </div>
-                    <div className="campoPanel">
-                        <p className="tituloCampo">Por vencer</p>
-                        <p className="numero" id="numero-por-vencer">-</p>
-                    </div>
-                    <div className="campoPanel">
-                        <p className="tituloCampo">Vencidos</p>
-                        <p className="numero" id="numero-vencidos">-</p>
-                    </div>
-                    <div className="campoPanel">
-                        <p className="tituloCampo">Personas &uacute;nicas</p>
-                        <p className="numero" id="numero-personas">-</p>
-                    </div>
-                    <div className="campoPanel">
-                        <p className="tituloCampo">Instituciones</p>
-                        <p className="numero" id="numero-instituciones">-</p>
-                    </div>
-                </div>
-                <div className="campoConveniosRecientes">
-                    <h2 className="titulo fs-6">Convenios recientes</h2>
-                    <div id="convenios-recientes"></div>
-                </div>
-                <div className="campoConveniosRecientes">
-                    <h2 className="titulo fs-6">Estad&iacute;sticas</h2>
-                    <div id="estadisticas"></div>
+    
+    return (
+        <div className="dashboard">
+
+            <div className="dashboardEncabezado">
+                <div>
+                    <h2 className="titulo">Panel principal</h2>
+                    <p>Resumen general de la gestión de convenios</p>
                 </div>
             </div>
+
+            <section className="dashboardIndicadores">
+
+                <div className="campoPanel">
+                    <p className="tituloCampo">Convenios firmados</p>
+                    <p className="numero" id="numero-firmados">-</p>
+                </div>
+
+                <div className="campoPanel">
+                    <p className="tituloCampo">Convenios vigentes</p>
+                    <p className="numero" id="numero-vigentes">-</p>
+                </div>
+
+                <div className="campoPanel">
+                    <p className="tituloCampo">En revisión</p>
+                    <p className="numero" id="numero-revision">-</p>
+                </div>
+
+                <div className="campoPanel">
+                    <p className="tituloCampo">Por vencer</p>
+                    <p className="numero" id="numero-por-vencer">-</p>
+                </div>
+
+                <div className="campoPanel">
+                    <p className="tituloCampo">Vencidos</p>
+                    <p className="numero" id="numero-vencidos">-</p>
+                </div>
+
+                <div className="campoPanel">
+                    <p className="tituloCampo">Personas únicas</p>
+                    <p className="numero" id="numero-personas">-</p>
+                </div>
+
+                <div className="campoPanel">
+                    <p className="tituloCampo">Instituciones</p>
+                    <p className="numero" id="numero-instituciones">-</p>
+                </div>
+
+            </section>
+
+            <section className="dashboardSecciones">
+
+                <div className="campoConveniosRecientes">
+                    <h3 className="tituloSeccion">Convenios recientes</h3>
+                    <p className="descripcionSeccion">
+                        Últimos convenios incorporados al sistema
+                    </p>
+
+                    <div id="convenios-recientes"></div>
+                </div>
+
+                <div className="campoConveniosRecientes">
+                    <h3 className="tituloSeccion">Estadísticas</h3>
+                    <p className="descripcionSeccion">
+                        Distribución de los convenios registrados
+                    </p>
+
+                    <div id="estadisticas"></div>
+                </div>
+
+            </section>
+
         </div>
     );
+
 }

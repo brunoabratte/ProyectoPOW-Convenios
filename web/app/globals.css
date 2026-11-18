@@ -23,16 +23,40 @@ button, input, select, textarea {
     font: inherit;
 }
 
-.headerPanelPrincipal{
+
+.headerPanelPrincipal {
+    height: 80px;
     background-color: #21374E;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    position: relative;
+    flex-shrink: 0;
 }
 
-.barraLateral{
-    width: 260px;
+.logoConvenios {
+    height: 80px;
+    width: auto;
+    max-width: 75%;
+    object-fit: contain;
+    padding: 10px;
+}
+
+.logoCuenta {
+    height: 42px;
+    width: 42px;
+    object-fit: contain;
+    cursor: pointer;
+}
+
+.barraLateral {
+    width: 250px;
     flex-shrink: 0;
     color: #29465E;
-    background-color: #EDF1F5;
-    padding: 16px;
+    background-color: #F1F4F7;
+    padding: 24px 16px;
+    min-height: calc(100vh - 80px);
 }
 
 .barraLateral ul {
@@ -41,34 +65,82 @@ button, input, select, textarea {
 }
 
 .opcionMenu {
-    display: block;
-    padding: 14px 16px;
-    margin-bottom: 8px;
-    border-radius: 12px;
-    color: #29465E;
-    text-decoration: none;
-    transition: background-color 0.2s;
     display: flex;
     align-items: center;
     gap: 12px;
+    padding: 12px 14px;
+    margin-bottom: 7px;
+    border-radius: 8px;
+    color: #29465E;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background-color 0.2s;
 }
 
 .opcionMenu:hover {
-    background-color: #D6E2EE;
+    background-color: #E1E9F0;
     color: #21374E;
 }
 
 .opcionMenu.activa {
-    background-color: #D6E2EE;
+    background-color: #DCE7F0;
+    color: #21374E;
     font-weight: 600;
 }
 
-.logoConvenios {
-    justify-content: start;
-    height: 80px;
-    width: auto;
-    max-width: 100%;
+.logo {
+    height: 28px;
+    width: 32px;
+    object-fit: contain;
+    flex-shrink: 0;
 }
+
+.menu-usuario {
+    position: absolute;
+    top: 70px;
+    right: 20px;
+    z-index: 10;
+    width: 190px;
+    background-color: white;
+    border: 1px solid #e1e7ed;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+}
+
+.menu-usuario button {
+    background: none;
+    border: none;
+    padding: 12px;
+    text-align: left;
+    cursor: pointer;
+    color: #294761;
+    border-radius: 5px;
+}
+
+.menu-usuario button:hover {
+    background-color: #eaf0f6;
+}
+
+@media (max-width: 768px) {
+    .barraLateral {
+        width: 190px;
+        padding: 16px 10px;
+    }
+
+    .headerPanelPrincipal {
+        padding: 0 16px;
+    }
+}
+
+
+.barraLateral ul {
+    margin: 0;
+    padding: 0;
+}
+
 
 .menu-usuario {
     position: absolute;
@@ -100,60 +172,65 @@ button, input, select, textarea {
     background-color: #eaf0f6;
 }
 
-.logoCuenta{
-    margin-left: 1230px;
-    height: 50px;
-    width: auto;
-    max-width: 100%;
-}
-
 .titulo{
     color: #29465E;
     font-weight: bold;
 }
 
-.campoPanel{
-    border: 1px solid #b1cef5;
-    padding: 20px;
-    border-radius: 10px;
+
+.contenedorPrincipal {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-.contenedorCampos{
+.contenedorCampos {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
 }
 
-@media (max-width: 900px){
-    .contenedorCampos{
-        grid-template-columns: repeat(2, 1fr);
+.campoPanel {
+    background-color: white;
+    border: 1px solid #e1e7ed;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 7px rgba(33, 55, 78, 0.04);
+}
+
+.tituloCampo {
+    color: #718096;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.numero {
+    color: #21374E;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.campoConveniosRecientes {
+    background-color: white;
+    padding: 22px;
+    border: 1px solid #e1e7ed;
+    border-radius: 10px;
+    box-shadow: 0 2px 7px rgba(33, 55, 78, 0.04);
+}
+
+@media (max-width: 1000px) {
+    .contenedorCampos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
-@media (max-width: 500px){
-    .contenedorCampos{
+@media (max-width: 600px) {
+    .contenedorCampos {
         grid-template-columns: 1fr;
     }
 }
 
-.tituloCampo{
-    color: #4182d6;
-    font-size: 13px;
-}
-
-.contenedorPrincipal{
-    display: flex;
-    flex-direction: column;
-    height: 85%;
-    gap: 20px;
-}
-
-.campoConveniosRecientes{
-    flex: 1;
-    padding: 20px;
-    border: 1px solid #b1cef5;
-    border-radius: 10px;
-}
 
 .opcionesFormulario{
     display: grid;
@@ -176,10 +253,319 @@ button, input, select, textarea {
     background-color: rgba(0, 0, 0, 0.5);
 }
 
-.logo{
-    height: 35px;
-    width: 50px;
+
+/* LOGIN */
+
+.loginSimple {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f1f4f7;
+    padding: 20px;
+}
+
+.loginTarjeta {
+    width: 100%;
+    max-width: 420px;
+    background-color: white;
+    padding: 40px;
+    border-radius: 12px;
+    border: 1px solid #e1e7ed;
+    box-shadow: 0 5px 20px rgba(33, 55, 78, 0.07);
+}
+
+.loginTitulo {
+    text-align: center;
+}
+
+.loginTitulo h1 {
+    color: #21374e;
+    font-size: 25px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.loginTitulo p {
+    color: #788795;
+    font-size: 13px;
+    margin: 0;
+}
+
+.loginSeparador {
+    height: 1px;
+    background-color: #e5eaf0;
+    margin: 28px 0;
+}
+
+.loginCampoSimple {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.loginCampoSimple label {
+    color: #29465e;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.loginCampoSimple input {
+    height: 45px;
+    padding: 0 13px;
+    border: 1px solid #d5dee7;
+    border-radius: 7px;
+    outline: none;
+    font-size: 14px;
+    background-color: #fff;
+}
+
+.loginCampoSimple input:focus {
+    border-color: #4a83ad;
+    box-shadow: 0 0 0 3px rgba(74, 131, 173, 0.1);
+}
+
+.loginTarjeta form button {
+    width: 100%;
+    height: 45px;
+    margin-top: 5px;
+    border: none;
+    border-radius: 7px;
+    background-color: #213f5b;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.loginTarjeta form button:hover:not(:disabled) {
+    background-color: #315d7b;
+}
+
+.loginTarjeta form button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.loginErrorSimple {
+    color: #b42318;
+    background-color: #fff0f0;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 13px;
+}
+
+.loginPieSimple {
+    text-align: center;
+    color: #9aa5af;
+    font-size: 11px;
+    margin: 25px 0 0;
+}
+
+@media (max-width: 480px) {
+    .loginTarjeta {
+        padding: 30px 22px;
+    }
+}
+
+.loginLogo {
+    width: 100px;
+    height: 100px;
     object-fit: contain;
-    margin-right: 0;
-    flex-shrink: 0;
+    margin-bottom: 18px;
+}
+
+
+/* DASHBOARD */
+
+.dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+.dashboardEncabezado {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dashboardEncabezado h2 {
+    margin-bottom: 6px;
+    font-size: 25px;
+}
+
+.dashboardEncabezado p {
+    color: #788795;
+    font-size: 14px;
+    margin: 0;
+}
+
+.dashboardIndicadores {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.dashboardIndicadores .campoPanel {
+    min-height: 115px;
+}
+
+.dashboardIndicadores .numero {
+    font-size: 30px;
+}
+
+.dashboardSecciones {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+.tituloSeccion {
+    color: #29465E;
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.descripcionSeccion {
+    color: #8996A3;
+    font-size: 12px;
+    margin-bottom: 22px;
+}
+
+.campoConveniosRecientes {
+    min-width: 0;
+}
+
+#estadisticas table {
+    font-size: 13px;
+}
+
+#estadisticas h3 {
+    margin-top: 18px;
+}
+
+@media (max-width: 1100px) {
+    .dashboardIndicadores {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboardSecciones {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .dashboardIndicadores {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* CONVENIOS RECIENTES */
+
+.convenioReciente {
+    padding: 16px 0;
+    border-bottom: 1px solid #e8edf2;
+}
+
+.convenioReciente:first-child {
+    padding-top: 0;
+}
+
+.convenioReciente:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.convenioRecienteSuperior {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.convenioRecienteCodigo {
+    color: #29465e;
+    font-size: 13px;
+}
+
+.convenioRecienteTitulo {
+    color: #263b50;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 7px;
+}
+
+.convenioRecienteDatos {
+    color: #7b8997;
+    font-size: 12px;
+    margin-bottom: 12px;
+}
+
+.convenioRecienteDatos span {
+    margin: 0 5px;
+}
+
+.convenioRecienteInferior {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.convenioRecienteInferior small {
+    color: #8996a3;
+    font-size: 11px;
+}
+
+.convenioRecienteInferior a {
+    color: #3476b9;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.convenioRecienteInferior a:hover {
+    text-decoration: underline;
+}
+
+/* ESTADOS */
+
+.etiquetaEstado {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.estadoAprobado {
+    background-color: #e4f3e9;
+    color: #287548;
+}
+
+.estadoRevision {
+    background-color: #fff2d9;
+    color: #a66a12;
+}
+
+.estadoBorrador {
+    background-color: #edf1f5;
+    color: #637487;
+}
+
+.estadoRechazado {
+    background-color: #fbe7e7;
+    color: #b43d3d;
+}
+
+.estadoNeutral {
+    background-color: #edf1f5;
+    color: #637487;
 }

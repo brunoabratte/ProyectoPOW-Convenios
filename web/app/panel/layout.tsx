@@ -16,7 +16,7 @@ export default function PanelLayout({
             <header className="headerPanelPrincipal">
                 <img
                     className="logoConvenios"
-                    src="/panel-logo.png"
+                    src="/logo-facultad.png"
                     alt="UNLPam Convenios"
                 />
 
