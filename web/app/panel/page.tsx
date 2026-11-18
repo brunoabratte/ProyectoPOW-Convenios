@@ -51,6 +51,7 @@ export default function PanelPage(){
         return "vence el " + crearFecha(convenio.fecha_vencimiento).toLocaleDateString("es-AR");
     }
 
+    
     function armarTabla(columna: string, conteo: any) {
         let claves = Object.keys(conteo).sort();
         let filas = "";
@@ -72,12 +73,8 @@ export default function PanelPage(){
                         <span>${escapar(nombre)}</span>
                         <strong>${cantidad}</strong>
                     </div>
-
                     <div class="estadisticaBarraFondo">
-                        <div
-                            class="estadisticaBarra"
-                            style="width: ${porcentaje}%"
-                        ></div>
+                        <div class="estadisticaBarra" style="width: ${porcentaje}%"></div>
                     </div>
                 </div>
             `;
@@ -92,13 +89,11 @@ export default function PanelPage(){
                 <h3 class="titulo estadisticaTitulo">
                     Convenios por ${escapar(columna.toLowerCase())}
                 </h3>
-
-                <div class="estadisticaLista">
-                    ${filas}
-                </div>
+                <div class="estadisticaLista">${filas}</div>
             </div>
         `;
     }
+
 
     async function cargarPanel() {
         let datos = await obtenerConvenios();
