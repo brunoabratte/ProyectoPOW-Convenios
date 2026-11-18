@@ -1,14 +1,16 @@
 "use client";
 
-import { obtenerConvenioEspecifico, obtenerConvenios, registrar, registrarParte, subirDocumento } from "@/services/conveniosService";
+import { obtenerConvenioEspecifico, obtenerConvenios, obtenerTiposInstrumento, obtenerUnidades, registrar, registrarParte, subirDocumento } from "@/services/conveniosService";
 import { verificarSesion } from "@/services/authService";
 import { useEffect } from "react";
 import { registrarRelacion } from "@/services/conveniosService";
+import { obtenerPersonas } from "@/services/personasService";
 
 export default function ConveniosPage(){
     useEffect(() => {
         verificarSesion();
-
+        listarInstrumentos();
+        listarUnidades();
         let parametros = new URLSearchParams(window.location.search);
         let abrir = parametros.get("abrir");
 
@@ -16,8 +18,9 @@ if (abrir != null)
     abrirDetalles(abrir);
     }, []);
 
-    function abrirModal() {
+    async function abrirModal() {
         const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
+        await listarPersonas();
         modal.showModal();
     }
 
@@ -34,6 +37,73 @@ if (abrir != null)
             .replace(/[-\s]/g, "_");
     }
 
+    async function listarPersonas(){
+        let personas = document.getElementById("personas") as HTMLSelectElement | null;
+
+        if (personas == null)
+            return;
+
+        personas.innerHTML = `<option value="">Seleccione una persona</option>`;
+
+        let datosPersonas = await obtenerPersonas();
+
+        for (let i = 0; i < datosPersonas.datos.length; i++){
+            personas.innerHTML += `
+            <option value="${datosPersonas.datos[i].id_persona}">${datosPersonas.datos[i].id_persona} - ${datosPersonas.datos[i].nombre} ${datosPersonas.datos[i].apellido}</option>
+            `;
+        }
+    }
+
+    async function listarInstrumentos() {
+        let selectTipo = document.getElementById("tipo") as HTMLSelectElement | null;
+        let selectFiltroTipo = document.getElementById("filtro-tipo") as HTMLSelectElement | null;
+
+        if (selectTipo == null || selectFiltroTipo == null)
+            return;
+
+        let instrumentos = await obtenerTiposInstrumento();
+
+        if (!instrumentos || !Array.isArray(instrumentos.data))
+            return;
+
+        let opcionesForm = `<option value="">Seleccione un tipo de instrumento</option>`;
+        let opcionesFiltro = `<option value="">Tipo de instrumento</option>`;
+
+        for (let i = 0; i < instrumentos.data.length; i++) {
+            let instrumento = instrumentos.data[i];
+            opcionesForm += `<option value="${instrumento.id_tipo_instrumento}">${instrumento.nombre}</option>`;
+            opcionesFiltro += `<option value="${instrumento.nombre}">${instrumento.nombre}</option>`;
+        }
+
+        selectTipo.innerHTML = opcionesForm;
+        selectFiltroTipo.innerHTML = opcionesFiltro;
+    }
+
+    async function listarUnidades() {
+        let selectUnidad = document.getElementById("unidad-responsable") as HTMLSelectElement | null;
+        let selectFiltroUnidad = document.getElementById("filtro-unidad-academica") as HTMLSelectElement | null;
+
+        if (selectUnidad == null || selectFiltroUnidad == null)
+            return;
+
+        let unidades = await obtenerUnidades();
+
+        if (!unidades || !Array.isArray(unidades.data))
+            return;
+
+        let opcionesForm = `<option value="">Seleccione una unidad academica</option>`;
+        let opcionesFiltro = `<option value="">Unidad academica</option>`;
+
+        for (let i = 0; i < unidades.data.length; i++) {
+            let unidad = unidades.data[i];
+            opcionesForm += `<option value="${unidad.id_unidad}">${unidad.nombre}</option>`;
+            opcionesFiltro += `<option value="${unidad.nombre}">${unidad.nombre}</option>`;
+        }
+
+        selectUnidad.innerHTML = opcionesForm;
+        selectFiltroUnidad.innerHTML = opcionesFiltro;
+    }
+    
     async function listarRelaciones() {
         const opciones = document.getElementById("tipo") as HTMLSelectElement | null;
         const formulario = document.getElementById("relaciones-convenios") as HTMLFormElement | null;
@@ -51,8 +121,8 @@ if (abrir != null)
         const convenios: any[] = resp.status === 200 ? resp.data : [];
 
         // 1. Específicos (8 = Colaboración, 10 = Pasantía) -> tipo_relacion: "especifico_de"
-        if (tipo === "8" || tipo === "10") {
-            const idMarcoCompatible = tipo === "8" ? 7 : 9;
+        if (tipo === "2") {
+            const idMarcoCompatible = 1;
             const marcos = convenios.filter(c => Number(c.id_tipo_instrumento) === idMarcoCompatible);
 
             const opcionesHtml = marcos.length > 0
@@ -307,7 +377,9 @@ if (abrir != null)
             avisos += "\n- No se pudo registrar la parte " + (i + 1);
     }
 
-    // 4. Documento
+    // 4. Personas y pasantias
+
+    // 5. Documento
     if (archivo){
         let documento = new FormData();
         documento.append("id_instrumento", idInstrumento);
@@ -457,16 +529,9 @@ if (abrir != null)
                             <input type="text" name="codigo" id="codigo" className="form-control" placeholder="Código único"/>
                             <input type="text" name="titulo" id="titulo" className="form-control" placeholder="Título"/>
                             <select id="tipo" className="form-select" defaultValue="" onChange={listarRelaciones}>
-                                <option value="">Tipo de instrumento</option>
-                                <option value="7">Convenio marco de colaboracion</option>
-                                <option value="8">Convenio espec&iacute;fico de colaboracion</option>
-                                <option value="9">Convenio marco de pasant&iacute;a</option>
-                                <option value="10">Convenio espec&iacute;fico de pasant&iacute;a</option>
-                                <option value="4">Adenda</option>
+                                
                             </select>
-                            <select id="unidad-responsable" name="unidad" className="form-select" defaultValue="1">
-                                <option value="1">Facultad de ingeniería</option>
-                                <option value="2">Rectorado</option>
+                            <select id="unidad-responsable" name="unidad" className="form-select" defaultValue="">
                             </select>
                             <textarea id="objeto" name="objeto" className="form-control" rows={4} placeholder="Ingrese el objeto del convenio..."></textarea>
                             <textarea id="alcance" name="alcance" className="form-control" rows={4} placeholder="Ingrese el alcance del convenio..."/>
@@ -523,11 +588,9 @@ if (abrir != null)
                         <h4 className="titulo h4">6. Personas y pasantias</h4>
                         
                         <form className="d-flex flex-column gap-3 mb-5">
-                            <input type="text" name="nombre" id="nombre" className="form-control" placeholder="Nombre"/>
-                            <input type="text" name="apellido" id="apellido" className="form-control" placeholder="Apellido"/>
-                            <input type="text" name="dni" id="dni" className="form-control" placeholder="DNI"/>
-                            <input type="email" name="correo" id="correo" className="form-control" placeholder="Correo electrónico"/>
-                            <input type="tel" name="telefono" id="telefono" className="form-control" placeholder="Teléfono"/>
+                            <select id="personas" className="form-select" defaultValue="">
+                            </select>
+                            <input type="text" id="rol" className="form-control" placeholder="Ingrese el rol de la persona en el convenio"/>
                             <div id="seccion-pasantias" className="d-flex flex-column"></div>
                         </form>
 
@@ -553,11 +616,6 @@ if (abrir != null)
                         <div className="opcionesFormulario">
                             <select className="form-select border-0" id="filtro-tipo" defaultValue="">
                                 <option value="">Tipo de instrumento</option>
-                                <option value="convenio_marco_colaboracion">Convenio marco de colaboracion</option>
-                                <option value="convenio_especifico_colaboracion">Convenio espec&iacute;fico de colaboracion</option>
-                                <option value="convenio_marco_pasantia">Convenio marco de pasant&iacute;a</option>
-                                <option value="convenio_especifico_pasantia">Convenio espec&iacute;fico de pasant&iacute;a</option>
-                                <option value="adenda">Adenda</option>
                             </select>
                             <select className="form-select border-0" id="filtro-estado" defaultValue="">
                                 <option value="">Estado</option>
@@ -569,9 +627,7 @@ if (abrir != null)
                                 <option value="archivado">Archivado</option>
                             </select>
                             <select className="form-select border-0" id="filtro-unidad-academica" defaultValue="">
-                                <option value="">Unidad acad&eacute;mica</option>
-                                <option value="Facultad de ingeniería">Facultad de ingenier&iacute;a</option>
-                                <option value="Rectorado">Rectorado</option>
+                                <option value="">Unidad academica</option>
                             </select>
                             <select className="form-select border-0" id="filtro-fechas" defaultValue="">
                                 <option value="">Rango de fechas</option>

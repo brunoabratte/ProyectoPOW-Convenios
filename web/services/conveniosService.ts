@@ -202,3 +202,31 @@ export async function obtenerRelacionesPorInstrumento(idInstrumento: string) {
 
     return await respuesta.json();
 }
+
+export async function obtenerTiposInstrumento(){
+    const token = localStorage.getItem("token");
+
+    const respuesta = await fetch(url + "tipos-instrumento", {
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    return await respuesta.json();
+}
+
+export async function obtenerUnidades(){
+    const token = localStorage.getItem("token");
+
+    const respuesta = await fetch(url + "unidades", {
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    return await respuesta.json();
+}
