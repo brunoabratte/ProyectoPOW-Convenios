@@ -207,10 +207,6 @@ cd web && npm test
 - Prototipos y archivos de diseño
 - Manual breve de uso
 
-## 📅 Entrega
-
-Presentación grupal: **18 y 19 de noviembre de 2026**.
-
 ---
 
 *Facultad de Ingeniería · UNLPam — Proyecto académico sin fines comerciales.*
