@@ -7,15 +7,15 @@ use App\Models\User;
 
 class AuditoriaPolicy
 {
-    // Provisionalmente, solo Administración puede consultar auditorías.
+    // Administración y admin pueden consultar auditorías.
     public function viewAny(User $user): bool
     {
-        return $user->esAdministracion();
+        return $user->esAdmin() || $user->esAdministracion();
     }
 
     public function view(User $user, Auditoria $auditoria): bool
     {
-        return $user->esAdministracion();
+        return $user->esAdmin() || $user->esAdministracion();
     }
 
     // Las auditorías no se modifican ni eliminan desde la API.

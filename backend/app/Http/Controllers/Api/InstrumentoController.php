@@ -349,7 +349,7 @@ class InstrumentoController extends Controller
                 $estadoActual === 'borrador' &&
                 $nombreEstadoNuevo === 'revision'
             ) {
-                if (!$usuario->esGestion()) {
+                if (!$usuario->esAdmin() && !$usuario->esGestion()) {
                     abort(403, 'Solo Gestión puede enviar instrumentos a revisión.');
                 }
             }
@@ -359,7 +359,7 @@ class InstrumentoController extends Controller
                 $estadoActual === 'revision' &&
                 in_array($nombreEstadoNuevo, ['borrador', 'aprobado'])
             ) {
-                if (!$usuario->esRevision()) {
+                if (!$usuario->esAdmin() && !$usuario->esRevision()) {
                     abort(403, 'Solo Revisión puede aprobar o devolver instrumentos.');
                 }
 
@@ -381,7 +381,7 @@ class InstrumentoController extends Controller
                 $estadoActual === 'aprobado' &&
                 $nombreEstadoNuevo === 'firmado'
             ) {
-                if (!$usuario->esGestion()) {
+                if (!$usuario->esAdmin() && !$usuario->esGestion()) {
                     abort(403, 'Solo Gestión puede registrar la firma.');
                 }
 
@@ -400,6 +400,7 @@ class InstrumentoController extends Controller
                 $nombreEstadoNuevo === 'rescindido'
             ) {
                 if (
+                    !$usuario->esAdmin() &&
                     !$usuario->esGestion() &&
                     !$usuario->esAdministracion()
                 ) {
@@ -410,7 +411,7 @@ class InstrumentoController extends Controller
             // APROBADO/FIRMADO/RESCINDIDO -> ARCHIVADO:
             // requiere Administración.
             elseif ($nombreEstadoNuevo === 'archivado') {
-                if (!$usuario->esAdministracion()) {
+                if (!$usuario->esAdmin() && !$usuario->esAdministracion()) {
                     abort(403, 'Solo Administración puede archivar instrumentos.');
                 }
             }

@@ -9,7 +9,7 @@ class PersonaPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->rol, [
+        return $user->esAdmin() || in_array($user->rol, [
             'administracion',
             'gestion',
             'revision',
@@ -24,16 +24,16 @@ class PersonaPolicy
 
     public function create(User $user): bool
     {
-        return $user->esAdministracion();
+        return $user->esAdmin() || $user->esAdministracion();
     }
 
     public function update(User $user, Persona $persona): bool
     {
-        return $user->esAdministracion();
+        return $user->esAdmin() || $user->esAdministracion();
     }
 
     public function delete(User $user, Persona $persona): bool
     {
-        return false;
+        return $user->esAdmin();
     }
 }

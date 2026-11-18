@@ -12,7 +12,7 @@ class InstrumentoPolicy
      */
     public function viewAny(User $user): bool
     {
-        return in_array($user->rol, [
+        return $user->esAdmin() || in_array($user->rol, [
             'administracion',
             'gestion',
             'revision',
@@ -25,8 +25,11 @@ class InstrumentoPolicy
      */
     public function view(User $user, Instrumento $instrumento): bool
     {
-        return $user->puedeAccederAInstrumento($instrumento)
-            && $this->viewAny($user);
+        return $user->esAdmin()
+            || (
+                $user->puedeAccederAInstrumento($instrumento)
+                && $this->viewAny($user)
+            );
     }
 
     /**
@@ -34,7 +37,7 @@ class InstrumentoPolicy
      */
     public function create(User $user): bool
     {
-        return $user->esGestion();
+        return $user->esAdmin() || $user->esGestion();
     }
 
     /**
@@ -42,8 +45,11 @@ class InstrumentoPolicy
      */
     public function update(User $user, Instrumento $instrumento): bool
     {
-        return $user->esGestion()
-            && $user->puedeAccederAInstrumento($instrumento);
+        return $user->esAdmin()
+            || (
+                $user->esGestion()
+                && $user->puedeAccederAInstrumento($instrumento)
+            );
     }
 
     /**
@@ -51,7 +57,7 @@ class InstrumentoPolicy
      */
     public function delete(User $user, Instrumento $instrumento): bool
     {
-        return false;
+        return $user->esAdmin();
     }
 
     /**
@@ -59,7 +65,7 @@ class InstrumentoPolicy
      */
     public function restore(User $user, Instrumento $instrumento): bool
     {
-        return false;
+        return $user->esAdmin();
     }
 
     /**
@@ -67,7 +73,7 @@ class InstrumentoPolicy
      */
     public function forceDelete(User $user, Instrumento $instrumento): bool
     {
-        return false;
+        return $user->esAdmin();
     }
 
     /**
@@ -75,7 +81,10 @@ class InstrumentoPolicy
      */
     public function gestionarRevision(User $user, Instrumento $instrumento): bool
     {
-        return $user->esRevision()
-            && $user->puedeAccederAInstrumento($instrumento);
+        return $user->esAdmin()
+            || (
+                $user->esRevision()
+                && $user->puedeAccederAInstrumento($instrumento)
+            );
     }
 }
