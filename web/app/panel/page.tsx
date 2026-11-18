@@ -54,32 +54,49 @@ export default function PanelPage(){
     function armarTabla(columna: string, conteo: any) {
         let claves = Object.keys(conteo).sort();
         let filas = "";
+        let maximo = 0;
 
         for (let i = 0; i < claves.length; i++) {
+            if (Number(conteo[claves[i]]) > maximo)
+                maximo = Number(conteo[claves[i]]);
+        }
+
+        for (let i = 0; i < claves.length; i++) {
+            let nombre = claves[i].replace(/_/g, " ");
+            let cantidad = Number(conteo[claves[i]]);
+            let porcentaje = maximo > 0 ? (cantidad / maximo) * 100 : 0;
+
             filas += `
-            <tr>
-                <td>${escapar(claves[i].replace(/_/g, " "))}</td>
-                <td>${conteo[claves[i]]}</td>
-            </tr>
+                <div class="estadisticaFila">
+                    <div class="estadisticaDatos">
+                        <span>${escapar(nombre)}</span>
+                        <strong>${cantidad}</strong>
+                    </div>
+
+                    <div class="estadisticaBarraFondo">
+                        <div
+                            class="estadisticaBarra"
+                            style="width: ${porcentaje}%"
+                        ></div>
+                    </div>
+                </div>
             `;
         }
 
-        if (filas === "")
-            filas = `<tr><td colspan="2" class="text-muted">Sin datos</td></tr>`;
+        if (filas === "") {
+            filas = `<p class="estadisticaSinDatos">Sin datos registrados</p>`;
+        }
 
         return `
-        <div class="mb-4">
-            <h3 class="titulo fs-6">Convenios por ${columna.toLowerCase()}</h3>
-            <table class="table table-striped table-bordered">
-                <thead>
-                    <tr>
-                        <th>${columna}</th>
-                        <th>Cantidad</th>
-                    </tr>
-                </thead>
-                <tbody>${filas}</tbody>
-            </table>
-        </div>
+            <div class="estadisticaGrupo">
+                <h3 class="titulo estadisticaTitulo">
+                    Convenios por ${escapar(columna.toLowerCase())}
+                </h3>
+
+                <div class="estadisticaLista">
+                    ${filas}
+                </div>
+            </div>
         `;
     }
 

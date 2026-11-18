@@ -569,3 +569,62 @@ button, input, select, textarea {
     background-color: #edf1f5;
     color: #637487;
 }
+
+/* ESTADISTICAS DEL DASHBOARD */
+
+.estadisticaGrupo {
+    margin-bottom: 28px;
+}
+
+.estadisticaTitulo {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.estadisticaLista {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.estadisticaFila {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.estadisticaDatos {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    color: #526477;
+    font-size: 12px;
+}
+
+.estadisticaDatos strong {
+    color: #29465E;
+    font-size: 12px;
+}
+
+.estadisticaBarraFondo {
+    width: 100%;
+    height: 9px;
+    background-color: #edf1f5;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.estadisticaBarra {
+    height: 100%;
+    background-color: #3476b9;
+    border-radius: 20px;
+    transition: width 0.4s ease;
+}
+
+.estadisticaSinDatos {
+    color: #8996a3;
+    font-size: 12px;
+    margin: 0;
+}
