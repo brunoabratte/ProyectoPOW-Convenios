@@ -6,12 +6,14 @@ import { useEffect } from "react";
 import { registrarRelacion } from "@/services/conveniosService";
 import { obtenerPersonas } from "@/services/personasService";
 
+const CONVENIOS_POR_PAGINA = 10;
+
 export default function ConveniosPage(){
     useEffect(() => {
         verificarSesion();
         listarInstrumentos();
         listarUnidades();
-        listarConvenios();
+        listarConvenios(1);
         let parametros = new URLSearchParams(window.location.search);
         let abrir = parametros.get("abrir");
 
@@ -398,146 +400,155 @@ if (abrir != null)
         alert("El convenio se registró como borrador, pero:" + avisos);
 
     cerrarModal();
-    listarConvenios();
+    listarConvenios(1);
     }
 
-    async function listarConvenios(){
-        let resultados = document.getElementById("resultados");
-        let buscador = document.getElementById("buscador") as HTMLInputElement | null;
-        let filtroTipo = document.getElementById("filtro-tipo") as HTMLSelectElement | null;
-        let filtroEstado = document.getElementById("filtro-estado") as HTMLSelectElement | null;;
-        let filtroUnidad = document.getElementById("filtro-unidad-academica") as HTMLSelectElement | null;;
-        let filtroFechas = document.getElementById("filtro-fechas") as HTMLSelectElement | null;;
-        if (resultados != null)
-            resultados.innerHTML = ""
-        
-        if (filtroTipo == null || filtroEstado == null || filtroUnidad == null || filtroFechas == null || buscador == null)
-            return;
+    async function listarConvenios(pagina: number = 1) {
+    let resultados = document.getElementById("resultados");
+    let buscador = document.getElementById("buscador") as HTMLInputElement | null;
+    let filtroTipo = document.getElementById("filtro-tipo") as HTMLSelectElement | null;
+    let filtroEstado = document.getElementById("filtro-estado") as HTMLSelectElement | null;
+    let filtroUnidad = document.getElementById("filtro-unidad-academica") as HTMLSelectElement | null;
+    let filtroFechas = document.getElementById("filtro-fechas") as HTMLSelectElement | null;
 
-        let datos = await obtenerConvenios();
-        console.log("Respuesta de la API:", datos);
-        console.log("Convenios recibidos:", datos.data);
-        console.log("Filtros seleccionados:", {
-            tipo: filtroTipo.value,
-            estado: filtroEstado.value,
-            unidad: filtroUnidad.value
-        });
+    if (filtroTipo == null || filtroEstado == null || filtroUnidad == null || filtroFechas == null || buscador == null || resultados == null)
+        return;
 
-        if (datos.status == 200){
-            let tipoSeleccionado = filtroTipo.value;
-            let estadoSeleccionado = filtroEstado.value;
-            let unidadSeleccionada = filtroUnidad.value;
-            let fechasSeleccionadas = filtroFechas.value;
-            let textoBuscado = buscador.value.trim().toLowerCase();
+    let datos = await obtenerConvenios();
 
-            let conveniosFiltrados = datos.data.filter((convenio: any) => {
+    if (datos.status != 200) {
+        resultados.innerHTML = `<p class="text-danger">No se pudieron obtener los convenios.</p>`;
+        return;
+    }
 
-                let coincideTipo =
-                    tipoSeleccionado === "" ||
-                    normalizar(String(convenio.tipo_instrumento?.nombre)) === normalizar(tipoSeleccionado);
+    let tipoSeleccionado = filtroTipo.value;
+    let estadoSeleccionado = filtroEstado.value;
+    let unidadSeleccionada = filtroUnidad.value;
+    let fechasSeleccionadas = filtroFechas.value;
+    let textoBuscado = buscador.value.trim().toLowerCase();
 
-                let coincideEstado =
-                    estadoSeleccionado === "" ||
-                    normalizar(String(convenio.estado?.nombre)) === normalizar(estadoSeleccionado);
+    let conveniosFiltrados = datos.data.filter((convenio: any) => {
+        let coincideTipo =
+            tipoSeleccionado === "" ||
+            normalizar(String(convenio.tipo_instrumento?.nombre)) === normalizar(tipoSeleccionado);
 
-                let coincideUnidad =
-                    unidadSeleccionada === "" ||
-                    normalizar(String(convenio.unidad?.nombre)) === normalizar(unidadSeleccionada);
+        let coincideEstado =
+            estadoSeleccionado === "" ||
+            normalizar(String(convenio.estado?.nombre)) === normalizar(estadoSeleccionado);
 
-                let coincideFecha = true;
+        let coincideUnidad =
+            unidadSeleccionada === "" ||
+            normalizar(String(convenio.unidad?.nombre)) === normalizar(unidadSeleccionada);
 
-                if (fechasSeleccionadas !== "") {
-                    if (!convenio.fecha_firma) {
-                        coincideFecha = false;
-                    } else {
-                        let fechaFirma = new Date(convenio.fecha_firma);
-                        let hoy = new Date();
+        let coincideFecha = true;
 
-                        hoy.setHours(0, 0, 0, 0);
-                        fechaFirma.setHours(0, 0, 0, 0);
+        if (fechasSeleccionadas !== "") {
+            if (!convenio.fecha_firma) {
+                coincideFecha = false;
+            } else {
+                let fechaFirma = new Date(convenio.fecha_firma);
+                let hoy = new Date();
 
-                        let dias = Number(fechasSeleccionadas);
-                        let fechaLimite = new Date(hoy);
-                        fechaLimite.setDate(fechaLimite.getDate() - dias);
+                hoy.setHours(0, 0, 0, 0);
+                fechaFirma.setHours(0, 0, 0, 0);
 
-                        if (fechasSeleccionadas === "antiguos") {
-                            fechaLimite = new Date(hoy);
-                            fechaLimite.setFullYear(fechaLimite.getFullYear() - 1);
-                            coincideFecha = fechaFirma < fechaLimite;
-                        } else {
-                            coincideFecha = fechaFirma >= fechaLimite && fechaFirma <= hoy;
-                        }
-                    }
+                let dias = Number(fechasSeleccionadas);
+                let fechaLimite = new Date(hoy);
+                fechaLimite.setDate(fechaLimite.getDate() - dias);
+
+                if (fechasSeleccionadas === "antiguos") {
+                    fechaLimite = new Date(hoy);
+                    fechaLimite.setFullYear(fechaLimite.getFullYear() - 1);
+                    coincideFecha = fechaFirma < fechaLimite;
+                } else {
+                    coincideFecha = fechaFirma >= fechaLimite && fechaFirma <= hoy;
                 }
-
-
-                let coincideBusqueda =
-                    textoBuscado === "" ||
-                    normalizar(convenio.codigo ?? "").includes(normalizar(textoBuscado)) ||
-                    normalizar(convenio.titulo ?? "").includes(normalizar(textoBuscado)) ||
-                    normalizar(convenio.tipo_instrumento?.nombre ?? "").includes(normalizar(textoBuscado)) ||
-                    normalizar(convenio.unidad?.nombre ?? "").includes(normalizar(textoBuscado)) ||
-                    normalizar(convenio.estado?.nombre ?? "").includes(normalizar(textoBuscado));
-
-                return coincideTipo && coincideEstado && coincideUnidad && coincideBusqueda && coincideFecha;
-            });
-
-            console.log("Convenios filtrados:", conveniosFiltrados);
-            let tabla = document.createElement("table");
-            let textoHTML;
-            tabla.className = "table table-striped table-bordered rounded";
-            textoHTML = "";
-            textoHTML = `
-            <thead>
-                <tr>
-                    <th>C&oacute;digo</th>
-                    <th>T&iacute;tulo</th>
-                    <th>Tipo</th>
-                    <th>Unidad</th>
-                    <th>Estado</th>
-                    <th></th>
-                </tr>
-            </thead>
-            `;
-            for (let i = 0; i < conveniosFiltrados.length; i++){
-                textoHTML += `
-                <tbody>
-                    <tr>
-                        <td>${conveniosFiltrados[i].codigo}</td>
-                        <td>${conveniosFiltrados[i].titulo}</td>
-                        <td>${conveniosFiltrados[i].tipo_instrumento?.nombre ?? "Sin tipo"}</td>
-                        <td>${conveniosFiltrados[i].unidad?.nombre ?? "Sin unidad"}</td>
-                        <td>${conveniosFiltrados[i].estado?.nombre ?? "Sin estado"}</td>
-                        <td>
-                            <button 
-                                type="button"
-                                class="btn btn-info btn-detalles"
-                                data-id="${conveniosFiltrados[i].id_instrumento}">
-                                VER DETALLES
-                                </button>
-                        </td>
-                    </tr>
-                </tbody>
-                `
-            }
-            // ... después de armar textoHTML en el bucle:
-            tabla.innerHTML = textoHTML;
-
-            tabla.querySelectorAll(".btn-detalles").forEach((boton) => {
-                boton.addEventListener("click", () => {
-                    let id = boton.getAttribute("data-id");
-
-                    if (id != null)
-                        abrirDetalles(id);
-                });
-            });
-
-            if (resultados != null) {
-                resultados.innerHTML = "";
-                resultados.appendChild(tabla);
             }
         }
+
+        let coincideBusqueda =
+            textoBuscado === "" ||
+            normalizar(convenio.codigo ?? "").includes(normalizar(textoBuscado)) ||
+            normalizar(convenio.titulo ?? "").includes(normalizar(textoBuscado)) ||
+            normalizar(convenio.tipo_instrumento?.nombre ?? "").includes(normalizar(textoBuscado)) ||
+            normalizar(convenio.unidad?.nombre ?? "").includes(normalizar(textoBuscado)) ||
+            normalizar(convenio.estado?.nombre ?? "").includes(normalizar(textoBuscado));
+
+        return coincideTipo && coincideEstado && coincideUnidad && coincideBusqueda && coincideFecha;
+    });
+
+    if (conveniosFiltrados.length === 0) {
+        resultados.innerHTML = `<p class="text-muted">No hay convenios que coincidan con la búsqueda.</p>`;
+        return;
     }
+
+    // Cálculo de paginación
+    let totalRegistros = conveniosFiltrados.length;
+    let totalPaginas = Math.ceil(totalRegistros / CONVENIOS_POR_PAGINA);
+    let paginaValida = Math.min(Math.max(1, pagina), totalPaginas);
+    let inicio = (paginaValida - 1) * CONVENIOS_POR_PAGINA;
+    let conveniosPagina = conveniosFiltrados.slice(inicio, inicio + CONVENIOS_POR_PAGINA);
+
+    let filas = "";
+    for (let i = 0; i < conveniosPagina.length; i++) {
+        filas += `
+        <tr>
+            <td>${conveniosPagina[i].codigo}</td>
+            <td>${conveniosPagina[i].titulo}</td>
+            <td>${conveniosPagina[i].tipo_instrumento?.nombre ?? "Sin tipo"}</td>
+            <td>${conveniosPagina[i].unidad?.nombre ?? "Sin unidad"}</td>
+            <td>${conveniosPagina[i].estado?.nombre ?? "Sin estado"}</td>
+            <td>
+                <button
+                    type="button"
+                    class="btn btn-info btn-detalles"
+                    data-id="${conveniosPagina[i].id_instrumento}">
+                    VER DETALLES
+                </button>
+            </td>
+        </tr>
+        `;
+    }
+
+    resultados.innerHTML = `
+    <table class="table table-striped table-bordered rounded">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Título</th>
+                <th>Tipo</th>
+                <th>Unidad</th>
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+    </table>
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <button type="button" class="btn btn-outline-secondary btn-pagina" data-pagina="${paginaValida - 1}"
+            ${paginaValida <= 1 ? "disabled" : ""}>Anterior</button>
+        <span>Página ${paginaValida} de ${totalPaginas} (${totalRegistros} registros)</span>
+        <button type="button" class="btn btn-outline-secondary btn-pagina" data-pagina="${paginaValida + 1}"
+            ${paginaValida >= totalPaginas ? "disabled" : ""}>Siguiente</button>
+    </div>
+    `;
+
+    resultados.querySelectorAll(".btn-detalles").forEach((boton) => {
+        boton.addEventListener("click", () => {
+            let id = boton.getAttribute("data-id");
+            if (id != null)
+                abrirDetalles(id);
+        });
+    });
+
+    resultados.querySelectorAll(".btn-pagina").forEach((boton) => {
+        boton.addEventListener("click", () => {
+            let numero = boton.getAttribute("data-pagina");
+            if (numero != null)
+                listarConvenios(Number(numero));
+        });
+    });
+}
     return(
         <div>
             <section className="listadoConvenios border rounded p-3 d-flex flex-column">
@@ -675,7 +686,7 @@ if (abrir != null)
                             </select>
                         </div>
                     </form>
-                    <button className="btn btn-secondary" onClick={listarConvenios}>Buscar</button>
+                    <button className="btn btn-secondary" onClick={() => listarConvenios(1)}>Buscar</button>
                     <dialog className="ventanaRegistro" id="ventanaDetalles"></dialog>
                 </div>
                 <div className="resultados pt-5" id="resultados">
