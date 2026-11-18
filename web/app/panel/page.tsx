@@ -3,12 +3,13 @@
 import { verificarSesion } from "@/services/authService";
 import { obtenerConvenios, obtenerParticipaciones } from "@/services/conveniosService";
 import { obtenerInstituciones } from "@/services/institucionesService";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // Mismo valor que en la pantalla de Alertas: si cambiás uno, cambiá el otro
 const DIAS_ALERTA = 30;
 
 export default function PanelPage(){
+    const [cargando, setCargando] = useState(true);
     useEffect(() => {
         verificarSesion();
         cargarPanel();
@@ -95,180 +96,199 @@ export default function PanelPage(){
     }
 
 
+    
     async function cargarPanel() {
-        let datos = await obtenerConvenios();
+        try {
+            let datos = await obtenerConvenios();
 
-        if (datos.status != 200) {
-            let contenedor = document.getElementById("estadisticas");
-            if (contenedor != null)
-                contenedor.innerHTML = "<p>No se pudieron obtener los convenios.</p>";
-            return;
-        }
-
-        let convenios = datos.data;
-
-        let hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-
-        let firmados = 0;
-        let vigentes = 0;
-        let enRevision = 0;
-        let porVencer = 0;
-        let vencidos = 0;
-
-        let porEstado: any = {};
-        let porTipo: any = {};
-        let porUnidad: any = {};
-        let porAnio: any = {};
-
-        for (let i = 0; i < convenios.length; i++) {
-            let c = convenios[i];
-            let estado = c.estado?.nombre ?? "sin estado";
-
-            sumar(porEstado, estado);
-            sumar(porTipo, c.tipo_instrumento?.nombre ?? "sin tipo");
-            sumar(porUnidad, c.unidad?.nombre ?? "sin unidad");
-            sumar(porAnio, c.fecha_firma ? String(c.fecha_firma).substring(0, 4) : "Sin firma");
-
-            if (estado === "revision")
-                enRevision++;
-
-            // Días que faltan para el vencimiento (negativo = ya venció)
-            let dias: number | null = null;
-            if (c.fecha_vencimiento != null)
-                dias = Math.round((crearFecha(c.fecha_vencimiento).getTime() - hoy.getTime()) / 86400000);
-
-            // Vigente = firmado y sin vencimiento registrado o que todavía no venció
-            if (estado === "firmado") {
-                firmados++;
-
-                if (dias == null || dias >= 0)
-                    vigentes++;
+            if (datos.status != 200) {
+                let contenedor = document.getElementById("estadisticas");
+                if (contenedor != null)
+                    contenedor.innerHTML = "<p>No se pudieron obtener los convenios.</p>";
+                return;
             }
 
-            // Mismas reglas que la pantalla de Alertas
-            if ((estado === "firmado" || estado === "aprobado") && dias != null) {
-                let preaviso = Number(c.plazo_preaviso ?? 0);
+            let convenios = datos.data;
 
-                if (dias < 0)
-                    vencidos++;
-                else if (dias <= Math.max(preaviso, DIAS_ALERTA))
-                    porVencer++;
-            }
-        }
+            let hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
 
-        poner("numero-firmados", firmados);
-        poner("numero-vigentes", vigentes);
-        poner("numero-revision", enRevision);
-        poner("numero-por-vencer", porVencer);
-        poner("numero-vencidos", vencidos);
+            let firmados = 0;
+            let vigentes = 0;
+            let enRevision = 0;
+            let porVencer = 0;
+            let vencidos = 0;
 
-        // Estadísticas
-        let estadisticas = document.getElementById("estadisticas");
-        if (estadisticas != null) {
-            estadisticas.innerHTML =
-                armarTabla("Estado", porEstado) +
-                armarTabla("Tipo", porTipo) +
-                armarTabla("Unidad", porUnidad) +
-                armarTabla("Año de firma", porAnio);
-        }
+            let porEstado: any = {};
+            let porTipo: any = {};
+            let porUnidad: any = {};
+            let porAnio: any = {};
 
-        // Convenios recientes: los 5 últimos registrados
-        let recientes = convenios
-            .slice()
-            .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .slice(0, 5);
+            for (let i = 0; i < convenios.length; i++) {
+                let c = convenios[i];
+                let estado = c.estado?.nombre ?? "sin estado";
 
-        let contenedorRecientes = document.getElementById("convenios-recientes");
-        if (contenedorRecientes != null) {
-            if (recientes.length == 0) {
-                contenedorRecientes.innerHTML = `<p class="text-muted">Todavía no hay convenios registrados.</p>`;
-            }
-            else {
-                let lista = "";
+                sumar(porEstado, estado);
+                sumar(porTipo, c.tipo_instrumento?.nombre ?? "sin tipo");
+                sumar(porUnidad, c.unidad?.nombre ?? "sin unidad");
+                sumar(porAnio, c.fecha_firma ? String(c.fecha_firma).substring(0, 4) : "Sin firma");
 
-                for (let i = 0; i < recientes.length; i++) {
-                    let c = recientes[i];
+                if (estado === "revision")
+                    enRevision++;
 
-                    let estado = String(c.estado?.nombre ?? "sin estado")
-                        .toLowerCase();
+                // Días que faltan para el vencimiento (negativo = ya venció)
+                let dias: number | null = null;
+                if (c.fecha_vencimiento != null)
+                    dias = Math.round((crearFecha(c.fecha_vencimiento).getTime() - hoy.getTime()) / 86400000);
 
-                    let claseEstado = "estadoNeutral";
-                    let textoEstado = estado.replace(/_/g, " ");
+                // Vigente = firmado y sin vencimiento registrado o que todavía no venció
+                if (estado === "firmado") {
+                    firmados++;
 
-                    if (estado === "aprobado" || estado === "firmado") {
-                        claseEstado = "estadoAprobado";
-                        textoEstado = estado.charAt(0).toUpperCase() + estado.slice(1);
-                    }
-                    else if (estado === "revision") {
-                        claseEstado = "estadoRevision";
-                        textoEstado = "En revisión";
-                    }
-                    else if (estado === "borrador") {
-                        claseEstado = "estadoBorrador";
-                        textoEstado = "Borrador";
-                    }
-                    else if (estado === "rechazado") {
-                        claseEstado = "estadoRechazado";
-                        textoEstado = "Rechazado";
-                    }
-
-                    lista += `
-                        <div class="convenioReciente">
-
-                            <div class="convenioRecienteSuperior">
-                                <strong class="convenioRecienteCodigo">
-                                    ${escapar(c.codigo)}
-                                </strong>
-
-                                <span class="etiquetaEstado ${claseEstado}">
-                                    ${escapar(textoEstado)}
-                                </span>
-                            </div>
-
-                            <h4 class="convenioRecienteTitulo">
-                                ${escapar(c.titulo)}
-                            </h4>
-
-                            <p class="convenioRecienteDatos">
-                                ${escapar(String(c.tipo_instrumento?.nombre ?? "").replace(/_/g, " "))}
-                                <span>·</span>
-                                ${escapar(c.unidad?.nombre)}
-                            </p>
-
-                            <div class="convenioRecienteInferior">
-                                <small>${escapar(textoVigencia(c))}</small>
-
-                                <a href="/panel/convenios?abrir=${encodeURIComponent(c.id_instrumento)}">
-                                    Ver convenio →
-                                </a>
-                            </div>
-
-                        </div>
-                    `;
+                    if (dias == null || dias >= 0)
+                        vigentes++;
                 }
 
-                contenedorRecientes.innerHTML = lista;
+                // Mismas reglas que la pantalla de Alertas
+                if ((estado === "firmado" || estado === "aprobado") && dias != null) {
+                    let preaviso = Number(c.plazo_preaviso ?? 0);
+
+                    if (dias < 0)
+                        vencidos++;
+                    else if (dias <= Math.max(preaviso, DIAS_ALERTA))
+                        porVencer++;
+                }
             }
+
+            poner("numero-firmados", firmados);
+            poner("numero-vigentes", vigentes);
+            poner("numero-revision", enRevision);
+            poner("numero-por-vencer", porVencer);
+            poner("numero-vencidos", vencidos);
+
+            // Estadísticas
+            let estadisticas = document.getElementById("estadisticas");
+            if (estadisticas != null) {
+                estadisticas.innerHTML =
+                    armarTabla("Estado", porEstado) +
+                    armarTabla("Tipo", porTipo) +
+                    armarTabla("Unidad", porUnidad) +
+                    armarTabla("Año de firma", porAnio);
+            }
+
+            // Convenios recientes: los 5 últimos registrados
+            let recientes = convenios
+                .slice()
+                .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .slice(0, 5);
+
+            let contenedorRecientes = document.getElementById("convenios-recientes");
+            if (contenedorRecientes != null) {
+                if (recientes.length == 0) {
+                    contenedorRecientes.innerHTML = `<p class="text-muted">Todavía no hay convenios registrados.</p>`;
+                }
+                else {
+                    let lista = "";
+
+                    for (let i = 0; i < recientes.length; i++) {
+                        let c = recientes[i];
+
+                        let estado = String(c.estado?.nombre ?? "sin estado")
+                            .toLowerCase();
+
+                        let claseEstado = "estadoNeutral";
+                        let textoEstado = estado.replace(/_/g, " ");
+
+                        if (estado === "aprobado" || estado === "firmado") {
+                            claseEstado = "estadoAprobado";
+                            textoEstado = estado.charAt(0).toUpperCase() + estado.slice(1);
+                        }
+                        else if (estado === "revision") {
+                            claseEstado = "estadoRevision";
+                            textoEstado = "En revisión";
+                        }
+                        else if (estado === "borrador") {
+                            claseEstado = "estadoBorrador";
+                            textoEstado = "Borrador";
+                        }
+                        else if (estado === "rechazado") {
+                            claseEstado = "estadoRechazado";
+                            textoEstado = "Rechazado";
+                        }
+
+                        lista += `
+                            <div class="convenioReciente">
+
+                                <div class="convenioRecienteSuperior">
+                                    <strong class="convenioRecienteCodigo">
+                                        ${escapar(c.codigo)}
+                                    </strong>
+
+                                    <span class="etiquetaEstado ${claseEstado}">
+                                        ${escapar(textoEstado)}
+                                    </span>
+                                </div>
+
+                                <h4 class="convenioRecienteTitulo">
+                                    ${escapar(c.titulo)}
+                                </h4>
+
+                                <p class="convenioRecienteDatos">
+                                    ${escapar(String(c.tipo_instrumento?.nombre ?? "").replace(/_/g, " "))}
+                                    <span>·</span>
+                                    ${escapar(c.unidad?.nombre)}
+                                </p>
+
+                                <div class="convenioRecienteInferior">
+                                    <small>${escapar(textoVigencia(c))}</small>
+
+                                    <a href="/panel/convenios?abrir=${encodeURIComponent(c.id_instrumento)}">
+                                        Ver convenio →
+                                    </a>
+                                </div>
+
+                            </div>
+                        `;
+                    }
+
+                    contenedorRecientes.innerHTML = lista;
+                }
+            }
+
+            // Personas únicas dentro del alcance del usuario
+            let participaciones = await obtenerParticipaciones();
+            if (participaciones.datos != null) {
+                let personas: any = {};
+
+                for (let i = 0; i < participaciones.datos.length; i++)
+                    personas[String(participaciones.datos[i].id_persona)] = true;
+
+                poner("numero-personas", Object.keys(personas).length);
+            }
+
+            // Instituciones
+            let instituciones = await obtenerInstituciones();
+            if (instituciones.data != null)
+                poner("numero-instituciones", instituciones.data.length);
+
+        } finally {
+            setCargando(false);
         }
-
-        // Personas únicas dentro del alcance del usuario
-        let participaciones = await obtenerParticipaciones();
-        if (participaciones.datos != null) {
-            let personas: any = {};
-
-            for (let i = 0; i < participaciones.datos.length; i++)
-                personas[String(participaciones.datos[i].id_persona)] = true;
-
-            poner("numero-personas", Object.keys(personas).length);
-        }
-
-        // Instituciones
-        let instituciones = await obtenerInstituciones();
-        if (instituciones.data != null)
-            poner("numero-instituciones", instituciones.data.length);
     }
 
+    if (cargando) {
+        return (
+            <div className="d-flex flex-column justify-content-center align-items-center py-5">
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Cargando...</span>
+                </div>
+
+                <p className="mt-3 text-secondary">
+                    Cargando información...
+                </p>
+            </div>
+        );
+    }    
     
     return (
         <div className="dashboard">
