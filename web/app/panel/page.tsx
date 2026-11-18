@@ -275,23 +275,20 @@ export default function PanelPage(){
             setCargando(false);
         }
     }
-
-    if (cargando) {
-        return (
-            <div className="d-flex flex-column justify-content-center align-items-center py-5">
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Cargando...</span>
-                </div>
-
-                <p className="mt-3 text-secondary">
-                    Cargando información...
-                </p>
-            </div>
-        );
-    }    
-    
     return (
         <div className="dashboard">
+
+            {cargando && (
+                <div className="d-flex flex-column justify-content-center align-items-center py-4">
+                    <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Cargando...</span>
+                    </div>
+
+                    <p className="mt-3 text-secondary">
+                        Cargando información...
+                    </p>
+                </div>
+            )}
 
             <div className="dashboardEncabezado">
                 <div>
