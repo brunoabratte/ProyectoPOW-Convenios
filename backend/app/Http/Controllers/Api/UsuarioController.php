@@ -4,18 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Unidad;
 use App\Services\AuditoriaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class UsuarioController extends Controller
 {
     private function verificarAdministracion()
     {
-        if (!Auth::user()->esAdministracion()) {
+        if (!Auth::user()->esAdmin() && !Auth::user()->esAdministracion()) {
             return response()->json([
                 'status' => false,
                 'mensaje' => 'No tenés permisos para realizar esta operación.',
@@ -56,6 +54,7 @@ class UsuarioController extends Controller
             'email' => ['required', 'email', 'max:150', 'unique:usuarios,email'],
             'password' => ['required', 'string', 'min:8'],
             'rol' => ['required', Rule::in([
+                'admin',
                 'administracion',
                 'gestion',
                 'revision',
@@ -70,9 +69,9 @@ class UsuarioController extends Controller
         ]);
 
         AuditoriaService::registrar(
-        'crear_usuario',
-        'usuarios',
-        $usuario->id_usuario
+            'crear_usuario',
+            'usuarios',
+            $usuario->id_usuario
         );
 
         return response()->json([
@@ -105,6 +104,7 @@ class UsuarioController extends Controller
             ],
             'password' => ['sometimes', 'nullable', 'string', 'min:8'],
             'rol' => ['sometimes', 'required', Rule::in([
+                'admin',
                 'administracion',
                 'gestion',
                 'revision',
@@ -158,12 +158,10 @@ class UsuarioController extends Controller
             ], 422);
         }
 
-        // Actualizar el estado del usuario
         $usuario->update([
             'activo' => $datos['activo'],
         ]);
 
-        // Revocar todos sus tokens si se desactiva
         if (!$datos['activo']) {
             $usuario->tokens()->delete();
         }

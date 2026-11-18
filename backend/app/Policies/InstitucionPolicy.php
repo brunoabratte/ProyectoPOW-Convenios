@@ -9,7 +9,7 @@ class InstitucionPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->rol, [
+        return $user->esAdmin() || in_array($user->rol, [
             'administracion',
             'gestion',
             'revision',
@@ -24,16 +24,16 @@ class InstitucionPolicy
 
     public function create(User $user): bool
     {
-        return $user->esAdministracion();
+        return $user->esAdmin() || $user->esAdministracion();
     }
 
     public function update(User $user, Institucion $institucion): bool
     {
-        return $user->esAdministracion();
+        return $user->esAdmin() || $user->esAdministracion();
     }
 
     public function delete(User $user, Institucion $institucion): bool
     {
-        return false;
+        return $user->esAdmin();
     }
 }

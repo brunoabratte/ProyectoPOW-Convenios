@@ -9,7 +9,7 @@ class PasantiaPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->rol, [
+        return $user->esAdmin() || in_array($user->rol, [
             'administracion',
             'gestion',
             'revision',
@@ -19,27 +19,33 @@ class PasantiaPolicy
 
     public function view(User $user, Pasantia $pasantia): bool
     {
-        return $this->viewAny($user)
-            && $user->puedeAccederAInstrumento(
-                $pasantia->instrumento
+        return $user->esAdmin()
+            || (
+                $this->viewAny($user)
+                && $user->puedeAccederAInstrumento(
+                    $pasantia->instrumento
+                )
             );
     }
 
     public function create(User $user): bool
     {
-        return $user->esGestion();
+        return $user->esAdmin() || $user->esGestion();
     }
 
     public function update(User $user, Pasantia $pasantia): bool
     {
-        return $user->esGestion()
-            && $user->puedeAccederAInstrumento(
-                $pasantia->instrumento
+        return $user->esAdmin()
+            || (
+                $user->esGestion()
+                && $user->puedeAccederAInstrumento(
+                    $pasantia->instrumento
+                )
             );
     }
 
     public function delete(User $user, Pasantia $pasantia): bool
     {
-        return false;
+        return $user->esAdmin();
     }
 }

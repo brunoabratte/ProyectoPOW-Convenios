@@ -9,7 +9,7 @@ class InstrumentoRelacionPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->rol, [
+        return $user->esAdmin() || in_array($user->rol, [
             'administracion',
             'gestion',
             'revision',
@@ -19,25 +19,31 @@ class InstrumentoRelacionPolicy
 
     public function view(User $user, InstrumentoRelacion $relacion): bool
     {
-        return $this->viewAny($user)
-            && $user->puedeAccederAInstrumento($relacion->instrumentoOrigen)
-            && $user->puedeAccederAInstrumento($relacion->instrumentoDestino);
+        return $user->esAdmin()
+            || (
+                $this->viewAny($user)
+                && $user->puedeAccederAInstrumento($relacion->instrumentoOrigen)
+                && $user->puedeAccederAInstrumento($relacion->instrumentoDestino)
+            );
     }
 
     public function create(User $user): bool
     {
-        return $user->esGestion();
+        return $user->esAdmin() || $user->esGestion();
     }
 
     public function update(User $user, InstrumentoRelacion $relacion): bool
     {
-        return $user->esGestion()
-            && $user->puedeAccederAInstrumento($relacion->instrumentoOrigen)
-            && $user->puedeAccederAInstrumento($relacion->instrumentoDestino);
+        return $user->esAdmin()
+            || (
+                $user->esGestion()
+                && $user->puedeAccederAInstrumento($relacion->instrumentoOrigen)
+                && $user->puedeAccederAInstrumento($relacion->instrumentoDestino)
+            );
     }
 
     public function delete(User $user, InstrumentoRelacion $relacion): bool
     {
-        return false;
+        return $user->esAdmin();
     }
 }

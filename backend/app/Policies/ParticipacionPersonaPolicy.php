@@ -9,7 +9,7 @@ class ParticipacionPersonaPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->rol, [
+        return $user->esAdmin() || in_array($user->rol, [
             'administracion',
             'gestion',
             'revision',
@@ -19,23 +19,29 @@ class ParticipacionPersonaPolicy
 
     public function view(User $user, ParticipacionPersona $participacion): bool
     {
-        return $this->viewAny($user)
-            && $user->puedeAccederAInstrumento($participacion->instrumento);
+        return $user->esAdmin()
+            || (
+                $this->viewAny($user)
+                && $user->puedeAccederAInstrumento($participacion->instrumento)
+            );
     }
 
     public function create(User $user): bool
     {
-        return $user->esGestion();
+        return $user->esAdmin() || $user->esGestion();
     }
 
     public function update(User $user, ParticipacionPersona $participacion): bool
     {
-        return $user->esGestion()
-            && $user->puedeAccederAInstrumento($participacion->instrumento);
+        return $user->esAdmin()
+            || (
+                $user->esGestion()
+                && $user->puedeAccederAInstrumento($participacion->instrumento)
+            );
     }
 
     public function delete(User $user, ParticipacionPersona $participacion): bool
     {
-        return false;
+        return $user->esAdmin();
     }
 }

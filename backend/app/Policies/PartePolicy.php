@@ -9,7 +9,7 @@ class PartePolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->rol, [
+        return $user->esAdmin() || in_array($user->rol, [
             'administracion',
             'gestion',
             'revision',
@@ -19,23 +19,29 @@ class PartePolicy
 
     public function view(User $user, Parte $parte): bool
     {
-        return $this->viewAny($user)
-            && $user->puedeAccederAInstrumento($parte->instrumento);
+        return $user->esAdmin()
+            || (
+                $this->viewAny($user)
+                && $user->puedeAccederAInstrumento($parte->instrumento)
+            );
     }
 
     public function create(User $user): bool
     {
-        return $user->esGestion();
+        return $user->esAdmin() || $user->esGestion();
     }
 
     public function update(User $user, Parte $parte): bool
     {
-        return $user->esGestion()
-            && $user->puedeAccederAInstrumento($parte->instrumento);
+        return $user->esAdmin()
+            || (
+                $user->esGestion()
+                && $user->puedeAccederAInstrumento($parte->instrumento)
+            );
     }
 
     public function delete(User $user, Parte $parte): bool
     {
-        return false;
+        return $user->esAdmin();
     }
 }

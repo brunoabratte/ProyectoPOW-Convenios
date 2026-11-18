@@ -57,6 +57,11 @@ class User extends Authenticatable
     }
 
     // Métodos para identificar roles
+    public function esAdmin(): bool
+    {
+        return $this->rol === 'admin';
+    }
+
     public function esAdministracion(): bool
     {
         return $this->rol === 'administracion';
@@ -77,16 +82,16 @@ class User extends Authenticatable
         return $this->rol === 'consulta';
     }
 
-    // Alcance global si no tiene unidad asignada
+    // Solamente el administrador tiene alcance global
     public function tieneAlcanceGlobal(): bool
     {
-        return $this->id_unidad === null;
+        return $this->esAdmin();
     }
 
     // Comprueba si puede acceder a una unidad
     public function puedeAccederAUnidad(int $idUnidad): bool
     {
-        return $this->tieneAlcanceGlobal()
+        return $this->esAdmin()
             || (int) $this->id_unidad === $idUnidad;
     }
 
