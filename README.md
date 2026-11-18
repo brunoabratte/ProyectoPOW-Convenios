@@ -1,6 +1,6 @@
 # 📑 Sistema de Gestión de Convenios — UNLPam
 
-Trabajo Práctico Integrador de **Programación Orientada a la Web** y **Laboratorio de Aplicaciones Móviles**
+Trabajo Práctico Integrador de **Programación Orientada a la Web**
 Facultad de Ingeniería · Universidad Nacional de La Pampa · Analista Programador / Ingeniería en Sistemas
 
 > ⚠️ Proyecto académico. Trabaja **exclusivamente con datos ficticios**. No incluye firma digital, validación jurídica, OCR, envío de correos ni conexión con sistemas reales de la Universidad.
@@ -11,7 +11,7 @@ Facultad de Ingeniería · Universidad Nacional de La Pampa · Analista Programa
 
 Plataforma web de uso interno para administrar los convenios de la UNLPam: convenios **marco** y **específicos** de colaboración y de pasantía, **adendas**, **renovaciones** y **sustituciones**, junto con sus partes, representantes, personas vinculadas, documentación, revisión, firma registrada, plazos y estadísticas.
 
-La web consume una **API REST** compartida con la aplicación móvil del proyecto (React Native).
+La web consume una **API REST** propia, desarrollada en este mismo proyecto.
 
 Principios de modelado:
 
@@ -43,19 +43,19 @@ Cuatro perfiles: **Administración**, **Gestión**, **Revisión** y **Consulta**
 ## 🧱 Arquitectura y tecnologías
 
 ```
-┌──────────────┐        ┌──────────────┐
-│  Web         │        │  App móvil   │
-│  Next.js     │        │ React Native│
-└──────┬───────┘        └──────┬───────┘
-       │      JSON / HTTPS     │
-       └───────────┬───────────┘
-            ┌──────▼───────┐
-            │  API REST    │
-            │  PHP/Laravel │
-            └──────┬───────┘
-            ┌──────▼───────┐
-            │    MySQL     │
-            └──────────────┘
+┌──────────────┐
+│  Web         │
+│  Next.js     │
+└──────┬───────┘
+       │  JSON / HTTPS
+┌──────▼───────┐
+│  API REST    │
+│  PHP/Laravel │
+└──────┬───────┘
+       │
+┌──────▼───────┐
+│    MySQL     │
+└──────────────┘
 ```
 
 - **Frontend web:** React / Next.js (responsive: escritorio, tablet y móvil)
@@ -195,7 +195,7 @@ cd web && npm test
 
 | Integrante | Rol / Responsabilidad |
 |---|---|
-| Bruno Abratte | Parte web *(completar)* |
+| Bruno Abratte | Desarrollo web *(completar)* |
 | *(completar)* | *(completar)* |
 
 ## 📚 Documentación del proyecto
