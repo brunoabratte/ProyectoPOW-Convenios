@@ -37,7 +37,9 @@ class InstrumentoPolicy
      */
     public function create(User $user): bool
     {
-        return $user->esAdmin() || $user->esGestion();
+        return $user->esAdmin()
+        || $user->esGestion()
+        || $user->esAdministracion();
     }
 
     /**
