@@ -194,7 +194,7 @@ cd web && npm test
 ## 👨‍💻 Equipo
 
 | Integrante |
-|---|---|
+|---|
 | Bruno Abratte |
 | Franco Azcona |
 | Tomás Ruiz |
