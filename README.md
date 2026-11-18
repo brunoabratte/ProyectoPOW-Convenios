@@ -193,10 +193,11 @@ cd web && npm test
 
 ## 👨‍💻 Equipo
 
-| Integrante | Rol / Responsabilidad |
+| Integrante |
 |---|---|
-| Bruno Abratte | Desarrollo web *(completar)* |
-| *(completar)* | *(completar)* |
+| Bruno Abratte |
+| Franco Azcona |
+| Tomás Ruiz |
 
 ## 📚 Documentación del proyecto
 
