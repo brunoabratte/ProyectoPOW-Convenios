@@ -10,6 +10,8 @@ const DIAS_ALERTA = 30;
 
 export default function PanelPage(){
     const [cargando, setCargando] = useState(true);
+    const [convenios, setConvenios] = useState<any[]>([]);
+
     useEffect(() => {
         verificarSesion();
         cargarPanel();
@@ -22,10 +24,10 @@ export default function PanelPage(){
             return "-";
 
         return String(texto)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;");
+            .replace(/&/g, "&")
+            .replace(/</g, "<")
+            .replace(/>/g, ">")
+            .replace(/"/g, "");
     }
 
     // Se agrega la hora para que la fecha no se corra un día por la zona horaria
@@ -52,7 +54,78 @@ export default function PanelPage(){
         return "vence el " + crearFecha(convenio.fecha_vencimiento).toLocaleDateString("es-AR");
     }
 
-    
+    // Neutraliza fórmulas (=, +, -, @) y escapa comillas para exportar CSV seguro
+    function sanitizarCeldaCSV(valor: any): string {
+        if (valor === null || valor === undefined || valor === "")
+            return '""';
+
+        let texto = String(valor).replace(/\r?\n|\r/g, " ").trim();
+
+        if (/^\s*[=+\-@\t\r]/.test(texto)) {
+            texto = "'" + texto;
+        }
+
+        return `"${texto.replace(/"/g, '""')}"`;
+    }
+
+    function exportarConveniosCSV() {
+        if (convenios.length === 0) {
+            alert("No hay convenios disponibles para exportar.");
+            return;
+        }
+
+        const encabezados = [
+            "Código",
+            "Título",
+            "Tipo de instrumento",
+            "Unidad responsable",
+            "Estado",
+            "Objeto",
+            "Alcance",
+            "Expediente",
+            "Resolución",
+            "Fecha de firma",
+            "Fecha de inicio",
+            "Fecha de vencimiento",
+            "Plazo de preaviso (días)"
+        ];
+
+        const filas = [encabezados.map(sanitizarCeldaCSV).join(",")];
+
+        for (let i = 0; i < convenios.length; i++) {
+            const c = convenios[i];
+
+            const fila = [
+                c.codigo,
+                c.titulo,
+                c.tipo_instrumento?.nombre ?? "Sin tipo",
+                c.unidad?.nombre ?? "Sin unidad",
+                c.estado?.nombre ?? "Sin estado",
+                c.objeto ?? "",
+                c.alcance ?? "",
+                c.expediente_referencia ?? "",
+                c.resolucion ?? "",
+                c.fecha_firma ? String(c.fecha_firma).substring(0, 10) : "",
+                c.fecha_inicio ? String(c.fecha_inicio).substring(0, 10) : "",
+                c.fecha_vencimiento ? String(c.fecha_vencimiento).substring(0, 10) : "sin vencimiento registrado",
+                c.plazo_preaviso ?? ""
+            ];
+
+            filas.push(fila.map(sanitizarCeldaCSV).join(","));
+        }
+
+        // \uFEFF asegura que Excel reconozca UTF-8 (tildes y ñ)
+        const contenidoCSV = "\uFEFF" + filas.join("\r\n");
+        const blob = new Blob([contenidoCSV], { type: "text/csv;charset=utf-8;" });
+        const enlace = document.createElement("a");
+        const fechaHoy = new Date().toISOString().slice(0, 10);
+
+        enlace.href = URL.createObjectURL(blob);
+        enlace.download = `convenios_${fechaHoy}.csv`;
+        enlace.click();
+        setTimeout(() => URL.revokeObjectURL(enlace.href), 1000);
+    }
+
     function armarTabla(columna: string, conteo: any) {
         let claves = Object.keys(conteo).sort();
         let filas = "";
@@ -95,8 +168,6 @@ export default function PanelPage(){
         `;
     }
 
-
-    
     async function cargarPanel() {
         try {
             let datos = await obtenerConvenios();
@@ -108,7 +179,8 @@ export default function PanelPage(){
                 return;
             }
 
-            let convenios = datos.data;
+            let listaConvenios = datos.data;
+            setConvenios(listaConvenios);
 
             let hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
@@ -124,8 +196,8 @@ export default function PanelPage(){
             let porUnidad: any = {};
             let porAnio: any = {};
 
-            for (let i = 0; i < convenios.length; i++) {
-                let c = convenios[i];
+            for (let i = 0; i < listaConvenios.length; i++) {
+                let c = listaConvenios[i];
                 let estado = c.estado?.nombre ?? "sin estado";
 
                 sumar(porEstado, estado);
@@ -177,7 +249,7 @@ export default function PanelPage(){
             }
 
             // Convenios recientes: los 5 últimos registrados
-            let recientes = convenios
+            let recientes = listaConvenios
                 .slice()
                 .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                 .slice(0, 5);
@@ -275,6 +347,7 @@ export default function PanelPage(){
             setCargando(false);
         }
     }
+
     return (
         <div className="dashboard">
 
@@ -290,11 +363,20 @@ export default function PanelPage(){
                 </div>
             )}
 
-            <div className="dashboardEncabezado">
+            <div className="dashboardEncabezado d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <h2 className="titulo">Panel principal</h2>
                     <p>Resumen general de la gestión de convenios</p>
                 </div>
+
+                <button
+                    type="button"
+                    className="btn btn-outline-success"
+                    onClick={exportarConveniosCSV}
+                    disabled={cargando || convenios.length === 0}
+                >
+                    Exportar convenios CSV
+                </button>
             </div>
 
             <section className="dashboardIndicadores">
@@ -360,5 +442,4 @@ export default function PanelPage(){
 
         </div>
     );
-
 }
