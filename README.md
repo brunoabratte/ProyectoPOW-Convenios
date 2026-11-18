@@ -3,8 +3,6 @@
 Trabajo Práctico Integrador de **Programación Orientada a la Web**
 Facultad de Ingeniería · Universidad Nacional de La Pampa · Analista Programador / Ingeniería en Sistemas
 
-> ⚠️ Proyecto académico. Trabaja **exclusivamente con datos ficticios**. No incluye firma digital, validación jurídica, OCR, envío de correos ni conexión con sistemas reales de la Universidad.
-
 ---
 
 ## 📌 Descripción
