@@ -15,6 +15,7 @@ use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Models\Notificacion;
 use App\Models\User;
+use App\Models\InstrumentoRelacion;
 
 class InstrumentoController extends Controller
 {
@@ -532,6 +533,93 @@ class InstrumentoController extends Controller
             'status' => 200,
             'mensaje' => 'Historial obtenido correctamente',
             'data' => $historial
+        ]);
+    }
+
+
+
+    /**
+     * Consultar las relaciones de un instrumento.
+     */
+    public function relaciones(int $id)
+    {
+        $usuario = Auth::user();
+
+        // Buscar el instrumento dentro del alcance del usuario.
+        $instrumento = Instrumento::visiblesPara($usuario)
+            ->findOrFail($id);
+
+        $this->authorize('view', $instrumento);
+
+        // Relaciones donde el instrumento es el origen.
+        $comoOrigen = InstrumentoRelacion::with([
+            'instrumentoDestino.tipoInstrumento',
+            'instrumentoDestino.estado',
+        ])
+            ->where('id_instrumento_origen', $id)
+            ->whereHas('instrumentoDestino', function ($query) use ($usuario) {
+                $query->visiblesPara($usuario);
+            })
+            ->get()
+            ->map(function ($relacion) {
+                $destino = $relacion->instrumentoDestino;
+
+                return [
+                    'id_relacion' => $relacion->id_instrumento_relacion,
+                    'tipo_relacion' => $relacion->tipo_relacion,
+                    'descripcion' => $relacion->descripcion,
+                    'direccion' => 'origen',
+                    'instrumento' => [
+                        'id' => $destino->id_instrumento,
+                        'codigo' => $destino->codigo,
+                        'titulo' => $destino->titulo,
+                        'tipo' => $destino->tipoInstrumento?->nombre,
+                        'estado' => $destino->estado?->nombre,
+                    ],
+                ];
+            });
+
+        // Relaciones donde el instrumento es el destino.
+        $comoDestino = InstrumentoRelacion::with([
+            'instrumentoOrigen.tipoInstrumento',
+            'instrumentoOrigen.estado',
+        ])
+            ->where('id_instrumento_destino', $id)
+            ->whereHas('instrumentoOrigen', function ($query) use ($usuario) {
+                $query->visiblesPara($usuario);
+            })
+            ->get()
+            ->map(function ($relacion) {
+                $origen = $relacion->instrumentoOrigen;
+
+                return [
+                    'id_relacion' => $relacion->id_instrumento_relacion,
+                    'tipo_relacion' => $relacion->tipo_relacion,
+                    'descripcion' => $relacion->descripcion,
+                    'direccion' => 'destino',
+                    'instrumento' => [
+                        'id' => $origen->id_instrumento,
+                        'codigo' => $origen->codigo,
+                        'titulo' => $origen->titulo,
+                        'tipo' => $origen->tipoInstrumento?->nombre,
+                        'estado' => $origen->estado?->nombre,
+                    ],
+                ];
+            });
+
+        return response()->json([
+            'status' => 200,
+            'mensaje' => 'Relaciones del instrumento obtenidas correctamente.',
+            'data' => [
+                'instrumento' => [
+                    'id' => $instrumento->id_instrumento,
+                    'codigo' => $instrumento->codigo,
+                    'titulo' => $instrumento->titulo,
+                ],
+                'relaciones' => $comoOrigen
+                    ->concat($comoDestino)
+                    ->values(),
+            ],
         ]);
     }
 
