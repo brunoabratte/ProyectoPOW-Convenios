@@ -577,6 +577,7 @@ if (abrir != null)
                                 <option value="2">Instituto Pampeano de Innovacion</option>
                                 <option value="3">Empresa Tecnológica Horizonte</option>
                             </select>
+                            <button type="button" className="btn btn-secondary">Agregar nueva institucion</button>
                         </form>
 
                         <h4 className="titulo h4">5. Relaciones</h4>
