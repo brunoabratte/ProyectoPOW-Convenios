@@ -11,6 +11,7 @@ export default function ConveniosPage(){
         verificarSesion();
         listarInstrumentos();
         listarUnidades();
+        listarConvenios();
         let parametros = new URLSearchParams(window.location.search);
         let abrir = parametros.get("abrir");
 
@@ -483,9 +484,10 @@ if (abrir != null)
 
             console.log("Convenios filtrados:", conveniosFiltrados);
             let tabla = document.createElement("table");
+            let textoHTML;
             tabla.className = "table table-striped table-bordered rounded";
-            tabla.innerHTML = "";
-            tabla.innerHTML = `
+            textoHTML = "";
+            textoHTML = `
             <thead>
                 <tr>
                     <th>C&oacute;digo</th>
@@ -498,7 +500,7 @@ if (abrir != null)
             </thead>
             `;
             for (let i = 0; i < conveniosFiltrados.length; i++){
-                tabla.innerHTML += `
+                textoHTML += `
                 <tbody>
                     <tr>
                         <td>${conveniosFiltrados[i].codigo}</td>
@@ -518,6 +520,9 @@ if (abrir != null)
                 </tbody>
                 `
             }
+            // ... después de armar textoHTML en el bucle:
+            tabla.innerHTML = textoHTML;
+
             tabla.querySelectorAll(".btn-detalles").forEach((boton) => {
                 boton.addEventListener("click", () => {
                     let id = boton.getAttribute("data-id");
@@ -526,9 +531,12 @@ if (abrir != null)
                         abrirDetalles(id);
                 });
             });
-            resultados?.appendChild(tabla);
-        }
 
+            if (resultados != null) {
+                resultados.innerHTML = "";
+                resultados.appendChild(tabla);
+            }
+        }
     }
     return(
         <div>
@@ -604,6 +612,7 @@ if (abrir != null)
                                 <option value="2">Instituto Pampeano de Innovacion</option>
                                 <option value="3">Empresa Tecnológica Horizonte</option>
                             </select>
+                            <button type="button" className="btn btn-secondary">Agregar nueva institucion</button>
                         </form>
 
                         <h4 className="titulo h4">5. Relaciones</h4>
