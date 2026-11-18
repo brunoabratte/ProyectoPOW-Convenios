@@ -443,15 +443,42 @@ if (abrir != null)
                     unidadSeleccionada === "" ||
                     normalizar(String(convenio.unidad?.nombre)) === normalizar(unidadSeleccionada);
 
+                let coincideFecha = true;
+
+                if (fechasSeleccionadas !== "") {
+                    if (!convenio.fecha_firma) {
+                        coincideFecha = false;
+                    } else {
+                        let fechaFirma = new Date(convenio.fecha_firma);
+                        let hoy = new Date();
+
+                        hoy.setHours(0, 0, 0, 0);
+                        fechaFirma.setHours(0, 0, 0, 0);
+
+                        let dias = Number(fechasSeleccionadas);
+                        let fechaLimite = new Date(hoy);
+                        fechaLimite.setDate(fechaLimite.getDate() - dias);
+
+                        if (fechasSeleccionadas === "antiguos") {
+                            fechaLimite = new Date(hoy);
+                            fechaLimite.setFullYear(fechaLimite.getFullYear() - 1);
+                            coincideFecha = fechaFirma < fechaLimite;
+                        } else {
+                            coincideFecha = fechaFirma >= fechaLimite && fechaFirma <= hoy;
+                        }
+                    }
+                }
+
+
                 let coincideBusqueda =
                     textoBuscado === "" ||
                     normalizar(convenio.codigo ?? "").includes(normalizar(textoBuscado)) ||
                     normalizar(convenio.titulo ?? "").includes(normalizar(textoBuscado)) ||
-                    normalizar(convenio.tipo_instrumento.nombre ?? "").includes(normalizar(textoBuscado)) ||
-                    normalizar(convenio.unidad.nombre ?? "").includes(normalizar(textoBuscado)) ||
-                    normalizar(convenio.estado.nombre ?? "").includes(normalizar(textoBuscado));
+                    normalizar(convenio.tipo_instrumento?.nombre ?? "").includes(normalizar(textoBuscado)) ||
+                    normalizar(convenio.unidad?.nombre ?? "").includes(normalizar(textoBuscado)) ||
+                    normalizar(convenio.estado?.nombre ?? "").includes(normalizar(textoBuscado));
 
-                return coincideTipo && coincideEstado && coincideUnidad && coincideBusqueda;
+                return coincideTipo && coincideEstado && coincideUnidad && coincideBusqueda && coincideFecha;
             });
 
             console.log("Convenios filtrados:", conveniosFiltrados);
@@ -631,7 +658,12 @@ if (abrir != null)
                                 <option value="">Unidad academica</option>
                             </select>
                             <select className="form-select border-0" id="filtro-fechas" defaultValue="">
-                                <option value="">Rango de fechas</option>
+                                <option value="">Todos los períodos</option>
+                                <option value="30">Últimos 30 días</option>
+                                <option value="90">Últimos 3 meses</option>
+                                <option value="180">Últimos 6 meses</option>
+                                <option value="365">Último año</option>
+                                <option value="antiguos">Más de un año</option>
                             </select>
                         </div>
                     </form>
