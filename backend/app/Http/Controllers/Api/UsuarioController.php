@@ -125,7 +125,7 @@ class UsuarioController extends Controller
         $usuario->update($datos);
 
         AuditoriaService::registrar(
-            'crear_usuario',
+            'modificar_usuario',
             'usuarios',
             $usuario->id_usuario
         );
@@ -150,7 +150,7 @@ class UsuarioController extends Controller
 
         $usuario = User::findOrFail($id);
 
-        if ($usuario->id_usuario === Auth::id() && !$datos['activo']) {
+        if ((int) $usuario->id_usuario === (int) Auth::id() && !$datos['activo']) {
             return response()->json([
                 'status' => false,
                 'mensaje' => 'No podés desactivar tu propio usuario.',
@@ -158,9 +158,15 @@ class UsuarioController extends Controller
             ], 422);
         }
 
+        // Actualizar el estado del usuario
         $usuario->update([
             'activo' => $datos['activo'],
         ]);
+
+        // Revocar todos sus tokens si se desactiva
+        if (!$datos['activo']) {
+            $usuario->tokens()->delete();
+        }
 
         AuditoriaService::registrar(
             $datos['activo'] ? 'activar_usuario' : 'desactivar_usuario',
@@ -171,7 +177,7 @@ class UsuarioController extends Controller
         return response()->json([
             'status' => true,
             'mensaje' => 'Estado del usuario actualizado correctamente.',
-            'data' => $usuario->fresh(),
+            'data' => $usuario->fresh()->load('unidad'),
         ]);
     }
 }

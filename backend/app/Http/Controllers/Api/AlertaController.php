@@ -64,7 +64,6 @@ class AlertaController extends Controller
             // 2. Instrumentos próximos a vencer.
             if ($vencimiento->lte($limite)) {
                 $proximosAVencer[] = $item;
-                continue;
             }
 
             // 3. Instrumentos cuya fecha de preaviso ya llegó.

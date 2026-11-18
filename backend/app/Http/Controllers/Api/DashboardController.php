@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Instrumento;
-use App\Models\ParticipacionPersona;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
@@ -74,14 +73,45 @@ class DashboardController extends Controller
 
         // Cantidad total de personas distintas vinculadas
         // a los instrumentos visibles para el usuario.
-        $personasVinculadas = ParticipacionPersona::query()
-            ->whereIn(
-                'id_instrumento',
-                (clone $instrumentos)->select('id_instrumento')
+       $idsInstrumentos = (clone $instrumentos)
+            ->select('id_instrumento');
+
+        $personasVinculadas = DB::table('participaciones_personas')
+            ->select('id_persona')
+            ->whereIn('id_instrumento', $idsInstrumentos)
+
+            ->union(
+                DB::table('partes')
+                    ->select('id_persona_representante as id_persona')
+                    ->whereNotNull('id_persona_representante')
+                    ->whereIn('id_instrumento', $idsInstrumentos)
             )
+
+            ->union(
+                DB::table('pasantias')
+                    ->select('id_persona_estudiante as id_persona')
+                    ->whereNotNull('id_persona_estudiante')
+                    ->whereIn('id_instrumento', $idsInstrumentos)
+            )
+
+            ->union(
+                DB::table('pasantias')
+                    ->select('id_persona_tutor as id_persona')
+                    ->whereNotNull('id_persona_tutor')
+                    ->whereIn('id_instrumento', $idsInstrumentos)
+            )
+
+            ->union(
+                DB::table('pasantias')
+                    ->select('id_persona_responsable_receptor as id_persona')
+                    ->whereNotNull('id_persona_responsable_receptor')
+                    ->whereIn('id_instrumento', $idsInstrumentos)
+            );
+
+        $personasVinculadas = DB::query()
+            ->fromSub($personasVinculadas, 'personas_vinculadas')
             ->distinct()
             ->count('id_persona');
-
         return response()->json([
             'status' => 200,
             'mensaje' => 'Dashboard obtenido correctamente',

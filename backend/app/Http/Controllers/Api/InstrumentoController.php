@@ -13,28 +13,41 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\Notificacion;
+use App\Models\User;
 
 class InstrumentoController extends Controller
 {
-    // Listar instrumentos
-    public function index()
+    
+    // Listar instrumentos con filtros y paginación
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Instrumento::class);
 
-        $instrumentos = Instrumento::visiblesPara(Auth::user())
-            ->with([
-                'tipoInstrumento',
-                'unidad',
-                'estado'
-            ])
-            ->get();
+        [$consulta, $filtros] = $this->aplicarFiltros($request);
+
+        $datosPaginacion = $request->validate([
+            'per_page' => 'sometimes|integer|min:1|max:100',
+        ]);
+
+        $porPagina = $datosPaginacion['per_page'] ?? 15;
+
+        $pagina = $consulta
+            ->orderByDesc('id_instrumento')
+            ->paginate($porPagina);
 
         return response()->json([
             'status' => 200,
             'mensaje' => 'Instrumentos obtenidos correctamente',
-            'data' => $instrumentos
+            'data' => $pagina->items(),
+            'meta' => [
+                'pagina' => $pagina->currentPage(),
+                'ultima' => $pagina->lastPage(),
+                'total' => $pagina->total(),
+            ],
         ]);
     }
+
 
     // Consultar un instrumento específico
     public function show($id)
@@ -63,12 +76,15 @@ class InstrumentoController extends Controller
     // Actualizar un instrumento con control de concurrencia optimista
     public function update(Request $request, $id)
     {
-        $instrumento = Instrumento::visiblesPara(Auth::user())
+        $usuario = Auth::user();
+
+        // Buscar el instrumento dentro del alcance del usuario.
+        $instrumento = Instrumento::visiblesPara($usuario)
             ->findOrFail($id);
 
         $this->authorize('update', $instrumento);
 
-        // La versión es obligatoria para poder actualizar.
+        // Validar los datos recibidos.
         $datos = $request->validate([
             'version' => 'required|integer|min:1',
 
@@ -94,32 +110,16 @@ class InstrumentoController extends Controller
             'plazo_preaviso' => 'nullable|integer|min:0',
         ]);
 
-        // Guardamos la versión enviada por el cliente.
+        // Guardar la versión enviada por el cliente.
         $versionEnviada = (int) $datos['version'];
 
-        // La versión no se actualiza directamente desde los datos recibidos.
+        // La versión no debe actualizarse directamente desde el request.
         unset($datos['version']);
 
-        // Validar que el vencimiento no sea anterior al inicio.
-        $fechaInicio = $datos['fecha_inicio'] ?? $instrumento->fecha_inicio;
-        $fechaVencimiento = $datos['fecha_vencimiento'] ?? $instrumento->fecha_vencimiento;
-
+        // Validar que no se asigne una unidad fuera del alcance.
         if (
-            $fechaInicio &&
-            $fechaVencimiento &&
-            Carbon::parse($fechaVencimiento)->lt(Carbon::parse($fechaInicio))
-        ) {
-            throw ValidationException::withMessages([
-                'fecha_vencimiento' => [
-                    'La fecha de vencimiento no puede ser anterior a la fecha de inicio.'
-                ]
-            ]);
-        }
-
-        // No permitir mover el instrumento a una unidad inaccesible.
-        if (
-            array_key_exists('id_unidad', $datos)
-            && !Auth::user()->puedeAccederAUnidad((int) $datos['id_unidad'])
+            array_key_exists('id_unidad', $datos) &&
+            !$usuario->puedeAccederAUnidad((int) $datos['id_unidad'])
         ) {
             throw ValidationException::withMessages([
                 'id_unidad' => [
@@ -130,21 +130,24 @@ class InstrumentoController extends Controller
 
         $usuarioId = Auth::id();
 
+        // Ejecutar la actualización dentro de una transacción.
         $instrumentoActualizado = DB::transaction(function () use (
             $id,
             $versionEnviada,
             $datos,
+            $usuario,
             $usuarioId
         ) {
-            // Bloquear la fila mientras se realiza la actualización.
-            $instrumentoBloqueado = Instrumento::visiblesPara(Auth::user())
+            // Bloquear la fila para evitar modificaciones simultáneas.
+            $instrumentoBloqueado = Instrumento::visiblesPara($usuario)
                 ->where('id_instrumento', $id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            // Verificar nuevamente los permisos y el estado.
+            // Verificar nuevamente los permisos.
             $this->authorize('update', $instrumentoBloqueado);
 
+            // Solo se pueden modificar instrumentos en borrador.
             if ($instrumentoBloqueado->estado->nombre !== 'borrador') {
                 abort(403, 'Solo se pueden modificar instrumentos en estado borrador.');
             }
@@ -154,12 +157,32 @@ class InstrumentoController extends Controller
                 return null;
             }
 
-            // Actualizar los campos y aumentar la versión.
+            // Validar las fechas usando los datos actuales de la base.
+            $fechaInicio = $datos['fecha_inicio']
+                ?? $instrumentoBloqueado->fecha_inicio;
+
+            $fechaVencimiento = $datos['fecha_vencimiento']
+                ?? $instrumentoBloqueado->fecha_vencimiento;
+
+            if (
+                $fechaInicio &&
+                $fechaVencimiento &&
+                Carbon::parse($fechaVencimiento)->lt(Carbon::parse($fechaInicio))
+            ) {
+                throw ValidationException::withMessages([
+                    'fecha_vencimiento' => [
+                        'La fecha de vencimiento no puede ser anterior a la fecha de inicio.'
+                    ]
+                ]);
+            }
+
+            // Actualizar los campos e incrementar la versión.
             $instrumentoBloqueado->update([
                 ...$datos,
-                'version' => $instrumentoBloqueado->version + 1,
+                'version' => (int) $instrumentoBloqueado->version + 1,
             ]);
 
+            // Registrar la operación en auditoría.
             AuditoriaService::registrar(
                 'actualizar',
                 'instrumentos',
@@ -181,7 +204,7 @@ class InstrumentoController extends Controller
             ]);
         });
 
-        // Si la versión no coincide, no se guardó ningún cambio.
+        // Si la versión no coincide, devolver conflicto.
         if ($instrumentoActualizado === null) {
             return response()->json([
                 'status' => 409,
@@ -195,6 +218,7 @@ class InstrumentoController extends Controller
             'data' => $instrumentoActualizado
         ]);
     }
+
 
 
     // Registrar un instrumento
@@ -408,6 +432,33 @@ class InstrumentoController extends Controller
 
             $instrumento->update($actualizacion);
 
+            // Notificar al creador del instrumento sobre el cambio de estado.
+            if ($instrumento->id_usuario_creador) {
+                Notificacion::create([
+                    'id_usuario' => $instrumento->id_usuario_creador,
+                    'id_instrumento' => $instrumento->id_instrumento,
+                    'tipo' => 'cambio_estado',
+                    'mensaje' => "El instrumento {$instrumento->codigo} cambió de {$estadoActual} a {$nombreEstadoNuevo}.",
+                ]);
+            }
+
+            // Si el instrumento pasa a revisión, notificar a los revisores de su unidad.
+            if ($nombreEstadoNuevo === 'revision') {
+                $revisores = User::where('rol', 'revision')
+                    ->where('activo', true)
+                    ->where('id_unidad', $instrumento->id_unidad)
+                    ->get();
+
+                foreach ($revisores as $revisor) {
+                    Notificacion::create([
+                        'id_usuario' => $revisor->id_usuario,
+                        'id_instrumento' => $instrumento->id_instrumento,
+                        'tipo' => 'revision_asignada',
+                        'mensaje' => "El instrumento {$instrumento->codigo} fue enviado a revisión.",
+                    ]);
+                }
+            }
+
             // Registrar el historial del cambio.
             HistorialEstado::create([
                 'id_instrumento' => $instrumento->id_instrumento,
@@ -492,62 +543,8 @@ class InstrumentoController extends Controller
     {
         $this->authorize('viewAny', Instrumento::class);
 
-        $filtros = $request->validate([
-            'q' => 'nullable|string|max:255',
-            'tipo_instrumento_id' => 'nullable|integer|exists:tipos_instrumento,id_tipo_instrumento',
-            'estado_id' => 'nullable|integer|exists:estados,id_estado',
-            'id_unidad' => 'nullable|integer|exists:unidades,id_unidad',
-            'fecha_desde' => 'nullable|date',
-            'fecha_hasta' => 'nullable|date|after_or_equal:fecha_desde',
-        ]);
-
-        // Se respeta el alcance de unidades del usuario.
-        $consulta = Instrumento::visiblesPara(Auth::user())
-            ->with([
-                'tipoInstrumento',
-                'unidad',
-                'estado'
-            ]);
-
-        if (!empty($filtros['q'])) {
-            $termino = $filtros['q'];
-
-            $consulta->where(function ($query) use ($termino) {
-                $query->where('codigo', 'like', "%{$termino}%")
-                    ->orWhere('titulo', 'like', "%{$termino}%");
-            });
-        }
-
-        if (!empty($filtros['tipo_instrumento_id'])) {
-            $consulta->where(
-                'id_tipo_instrumento',
-                $filtros['tipo_instrumento_id']
-            );
-        }
-
-        if (!empty($filtros['estado_id'])) {
-            $consulta->where('id_estado', $filtros['estado_id']);
-        }
-
-        if (!empty($filtros['id_unidad'])) {
-            $consulta->where('id_unidad', $filtros['id_unidad']);
-        }
-
-        if (!empty($filtros['fecha_desde'])) {
-            $consulta->whereDate(
-                'fecha_firma',
-                '>=',
-                $filtros['fecha_desde']
-            );
-        }
-
-        if (!empty($filtros['fecha_hasta'])) {
-            $consulta->whereDate(
-                'fecha_firma',
-                '<=',
-                $filtros['fecha_hasta']
-            );
-        }
+        // Reutilizar los mismos filtros que utiliza el listado.
+        [$consulta, $filtros] = $this->aplicarFiltros($request);
 
         $usuarioId = Auth::id();
 
@@ -607,6 +604,7 @@ class InstrumentoController extends Controller
 
             fclose($archivo);
 
+            // Registrar la exportación en auditoría.
             AuditoriaService::registrar(
                 'exportar',
                 'instrumentos',
@@ -622,6 +620,73 @@ class InstrumentoController extends Controller
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
+
+
+    /**
+     * Aplicar filtros compartidos entre el listado y la exportación.
+     */
+    private function aplicarFiltros(Request $request): array
+    {
+        $filtros = $request->validate([
+            'q' => 'nullable|string|max:255',
+            'tipo_instrumento_id' => 'nullable|integer|exists:tipos_instrumento,id_tipo_instrumento',
+            'estado_id' => 'nullable|integer|exists:estados,id_estado',
+            'id_unidad' => 'nullable|integer|exists:unidades,id_unidad',
+            'fecha_desde' => 'nullable|date',
+            'fecha_hasta' => 'nullable|date|after_or_equal:fecha_desde',
+        ]);
+
+        // Se respeta el alcance de unidades del usuario.
+        $consulta = Instrumento::visiblesPara(Auth::user())
+            ->with([
+                'tipoInstrumento',
+                'unidad',
+                'estado',
+            ]);
+
+        if (!empty($filtros['q'])) {
+            $termino = $filtros['q'];
+
+            $consulta->where(function ($query) use ($termino) {
+                $query->where('codigo', 'like', "%{$termino}%")
+                    ->orWhere('titulo', 'like', "%{$termino}%");
+            });
+        }
+
+        if (!empty($filtros['tipo_instrumento_id'])) {
+            $consulta->where(
+                'id_tipo_instrumento',
+                $filtros['tipo_instrumento_id']
+            );
+        }
+
+        if (!empty($filtros['estado_id'])) {
+            $consulta->where('id_estado', $filtros['estado_id']);
+        }
+
+        if (!empty($filtros['id_unidad'])) {
+            $consulta->where('id_unidad', $filtros['id_unidad']);
+        }
+
+        if (!empty($filtros['fecha_desde'])) {
+            $consulta->whereDate(
+                'fecha_firma',
+                '>=',
+                $filtros['fecha_desde']
+            );
+        }
+
+        if (!empty($filtros['fecha_hasta'])) {
+            $consulta->whereDate(
+                'fecha_firma',
+                '<=',
+                $filtros['fecha_hasta']
+            );
+        }
+
+        return [$consulta, $filtros];
+    }
+
 
     /**
      * Evitar inyección de fórmulas en celdas CSV.

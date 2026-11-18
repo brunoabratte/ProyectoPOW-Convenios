@@ -19,6 +19,8 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AlertaController;
 use App\Http\Controllers\Api\CatalogoController;
 use App\Http\Controllers\Api\UsuarioController;
+use App\Http\Controllers\Api\NotificacionController;
+
 
 // Inicio de sesión: única ruta pública
 Route::post('/login', [AuthController::class, 'login']);
@@ -43,6 +45,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/instrumentos/{id}', [InstrumentoController::class, 'update']);
     Route::patch('/instrumentos/{id}/estado', [InstrumentoController::class, 'cambiarEstado']);
     Route::get('/instrumentos/{id}/historial', [InstrumentoController::class, 'historial']);
+    Route::get(
+        '/instrumentos/{id}/relaciones',
+        [InstrumentoController::class, 'relaciones']
+    );
 
     // Instituciones
     Route::get('/instituciones', [InstitucionController::class, 'index']);
@@ -105,9 +111,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/alertas', [AlertaController::class, 'index']);
 
     // Catálogos
-    Route::get('/catalogos/unidades', [CatalogoController::class, 'unidades']);
-    Route::get('/catalogos/tipos-instrumento', [CatalogoController::class, 'tiposInstrumento']);
-    Route::get('/catalogos/estados', [CatalogoController::class, 'estados']);
+    Route::get('/unidades', [CatalogoController::class, 'unidades']);
+    Route::get('/tipos-instrumento', [CatalogoController::class, 'tiposInstrumento']);
+    Route::get('/estados', [CatalogoController::class, 'estados']);
 
     
     // Usuarios
@@ -115,4 +121,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/usuarios', [UsuarioController::class, 'store']);
     Route::put('/usuarios/{id}', [UsuarioController::class, 'update']);
     Route::patch('/usuarios/{id}/activo', [UsuarioController::class, 'cambiarActivo']);
+
+    // Notificaciones
+    Route::get('/notificaciones', [NotificacionController::class, 'index']);
+    Route::patch('/notificaciones/{id}/leer', [NotificacionController::class, 'marcarLeida']);
 });
