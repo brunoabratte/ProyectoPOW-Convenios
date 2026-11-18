@@ -293,6 +293,7 @@ class InstrumentoController extends Controller
         ], 201);
     }
     
+    
     // Cambiar el estado de un instrumento
     public function cambiarEstado(Request $request, $id)
     {
@@ -344,22 +345,22 @@ class InstrumentoController extends Controller
                 ];
             }
 
-            // BORRADOR -> REVISION: requiere Gestión.
+            // BORRADOR -> REVISION: requiere Gestión o Admin.
             if (
                 $estadoActual === 'borrador' &&
                 $nombreEstadoNuevo === 'revision'
             ) {
-                if (!$usuario->esGestion()) {
+                if (!$usuario->esAdmin() && !$usuario->esGestion()) {
                     abort(403, 'Solo Gestión puede enviar instrumentos a revisión.');
                 }
             }
 
-            // REVISION -> BORRADOR o APROBADO: requiere Revisión.
+            // REVISION -> BORRADOR o APROBADO: requiere Revisión o Admin.
             elseif (
                 $estadoActual === 'revision' &&
                 in_array($nombreEstadoNuevo, ['borrador', 'aprobado'])
             ) {
-                if (!$usuario->esRevision()) {
+                if (!$usuario->esAdmin() && !$usuario->esRevision()) {
                     abort(403, 'Solo Revisión puede aprobar o devolver instrumentos.');
                 }
 
@@ -376,12 +377,12 @@ class InstrumentoController extends Controller
                 }
             }
 
-            // APROBADO -> FIRMADO: requiere Gestión y fecha de firma.
+            // APROBADO -> FIRMADO: requiere Gestión o Admin y fecha de firma.
             elseif (
                 $estadoActual === 'aprobado' &&
                 $nombreEstadoNuevo === 'firmado'
             ) {
-                if (!$usuario->esGestion()) {
+                if (!$usuario->esAdmin() && !$usuario->esGestion()) {
                     abort(403, 'Solo Gestión puede registrar la firma.');
                 }
 
@@ -394,12 +395,13 @@ class InstrumentoController extends Controller
                 }
             }
 
-            // FIRMADO -> RESCINDIDO: Gestión o Administración.
+            // FIRMADO -> RESCINDIDO: Gestión, Administración o Admin.
             elseif (
                 $estadoActual === 'firmado' &&
                 $nombreEstadoNuevo === 'rescindido'
             ) {
                 if (
+                    !$usuario->esAdmin() &&
                     !$usuario->esGestion() &&
                     !$usuario->esAdministracion()
                 ) {
@@ -408,9 +410,9 @@ class InstrumentoController extends Controller
             }
 
             // APROBADO/FIRMADO/RESCINDIDO -> ARCHIVADO:
-            // requiere Administración.
+            // requiere Administración o Admin.
             elseif ($nombreEstadoNuevo === 'archivado') {
-                if (!$usuario->esAdministracion()) {
+                if (!$usuario->esAdmin() && !$usuario->esAdministracion()) {
                     abort(403, 'Solo Administración puede archivar instrumentos.');
                 }
             }
@@ -510,6 +512,7 @@ class InstrumentoController extends Controller
             'historial' => $resultado['historial'],
         ]);
     }
+
 
 
     // Consultar historial de estados de un instrumento
