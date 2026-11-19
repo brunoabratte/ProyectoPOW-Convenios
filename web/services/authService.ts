@@ -1,5 +1,21 @@
 var url = "http://127.0.0.1:8000/api/"
 
+export async function obtenerRolActual(): Promise<string | null> {
+    let token = localStorage.getItem("token");
+    if (!token) return null;
+
+    try {
+        let res = await fetch(url + "me", {
+            headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return null;
+        let datos = await res.json();
+        return datos.usuario?.rol ?? null;
+    } catch {
+        return null;
+    }
+}
+
 export async function iniciarSesion(email: string, password: string){
     let textoAviso = document.getElementById("texto-aviso");
     if (textoAviso !== null)

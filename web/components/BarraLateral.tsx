@@ -4,12 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { obtenerCantidadAlertas } from "@/services/alertasService";
+import { obtenerRolActual } from "@/services/authService";
 
 export default function Sidebar() {
     const pathname = usePathname();
     const [cantidadAlertas, setCantidadAlertas] = useState(0);
+    const [rol, setRol] = useState<string | null>(null);
 
     useEffect(() => {
+        obtenerRolActual().then(setRol);
         let activo = true;
 
         async function actualizarAlertas() {
@@ -49,28 +52,28 @@ export default function Sidebar() {
                         </Link>
                     </li>
 
-                    <li>
+                    {rol !== "consulta" && <li>
                         <Link href="/panel/instituciones" className={`opcionMenu ${pathname === "/panel/instituciones" ? "activa" : ""}`}>
                             <img className="logo" src="/instituciones-logo.png" />
                             Instituciones
                         </Link>
-                    </li>
+                    </li>}
 
-                    <li>
+                    {rol !== "consulta" && <li>
                         <Link href="/panel/personas" className={`opcionMenu ${pathname === "/panel/personas" ? "activa" : ""}`}>
                             <img className="logo" src="/personas-logo.png" />
                             Personas
                         </Link>
-                    </li>
+                    </li>}
 
-                    <li>
+                    {rol !== "consulta" && <li>
                         <Link href="/panel/revisiones" className={`opcionMenu ${pathname === "/panel/revisiones" ? "activa" : ""}`}>
                             <img className="logo" src="/revisiones-logo.png" />
                             Revisiones
                         </Link>
-                    </li>
+                    </li>}
 
-                    <li>
+                    {rol !== "consulta" && <li>
                         <Link href="/panel/alertas" className={`opcionMenu ${pathname === "/panel/alertas" ? "activa" : ""}`}>
                             <img className="logo" src="/alertas-logo.png" />
                             Alertas
@@ -82,14 +85,14 @@ export default function Sidebar() {
                                 </span>
                             )}
                         </Link>
-                    </li>
+                    </li>}
 
-                    <li>
+                    {rol !== "consulta" && <li>
                         <Link href="/panel/administracion" className={`opcionMenu ${pathname === "/panel/administracion" ? "activa" : ""}`}>
                             <img className="logo" src="/administracion-logo.png" />
                             Administracion
                         </Link>
-                    </li>
+                    </li>}
 
                 </ul>
             </nav>

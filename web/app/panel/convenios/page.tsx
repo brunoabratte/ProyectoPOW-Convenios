@@ -1,7 +1,7 @@
 "use client";
 
-import { verificarSesion } from "@/services/authService";
-import { useEffect, useState } from "react";
+import { obtenerRolActual, verificarSesion } from "@/services/authService";
+import { useEffect, useRef, useState } from "react";
 import { registrarParticipacion, registrarPasantia, registrarRelacion } from "@/services/conveniosService";
 import { obtenerPersonas } from "@/services/personasService";
 import { obtenerInstituciones } from "@/services/institucionesService";
@@ -22,27 +22,39 @@ const CONVENIOS_POR_PAGINA = 10;
 export default function ConveniosPage(){
     const [idConvenioEditando, setIdConvenioEditando] = useState<string | null>(null);
     const [versionConvenioEditando, setVersionConvenioEditando] = useState<number | null>(null);
+    const [rolUsuario, setRolUsuario] = useState<string | null>(null);
+    const rolUsuarioRef = useRef<string | null>(null);
 
     useEffect(() => {
         verificarSesion();
-        listarInstrumentos();
-        listarUnidades();
-        listarInstitucionesSelect();
-        listarConvenios(1);
+        obtenerRolActual().then((rol) => {
+            rolUsuarioRef.current = rol;
+            setRolUsuario(rol);
+            if (rol === "consulta") {
+                listarConvenios(1);
+                return;
+            }
+            listarInstrumentos();
+            listarUnidades();
+            listarInstitucionesSelect();
+            listarConvenios(1);
 
-        let parametros = new URLSearchParams(window.location.search);
-        let abrir = parametros.get("abrir");
-        if (abrir != null)
-            abrirDetalles(abrir);
+            let parametros = new URLSearchParams(window.location.search);
+            let abrir = parametros.get("abrir");
+            if (abrir != null)
+                abrirDetalles(abrir);
+        });
     }, []);
 
     async function abrirModal() {
+        if (rolUsuarioRef.current === "consulta") return;
         const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
         await listarPersonas();
         modal.showModal();
     }
 
     async function editarConvenio(id: string) {
+        if (rolUsuarioRef.current === "consulta") return;
         let respuesta = await obtenerConvenioEspecifico(id);
 
         if (!respuesta.data) {
@@ -1016,7 +1028,7 @@ function actualizarSeccionPasantias() {
                     VER DETALLES
                 </button>
 
-                ${normalizar(String(conveniosPagina[i].estado?.nombre ?? "")) === "borrador" ? `
+                ${rolUsuarioRef.current !== "consulta" && normalizar(String(conveniosPagina[i].estado?.nombre ?? "")) === "borrador" ? `
                     <button
                         type="button"
                         class="btn btn-warning btn-editar"
@@ -1087,9 +1099,9 @@ function actualizarSeccionPasantias() {
                         Consulta y administración de instrumentos
                         </small>
                     </div>
-                    <button className="btn btn-secondary" onClick={abrirModal}>
+                    {rolUsuario !== "consulta" && <button className="btn btn-secondary" onClick={abrirModal}>
                         + Nuevo convenio
-                    </button>
+                    </button>}
                 </div>
                 <dialog id="ventanaRegistro" className="ventanaRegistro">
                         <div className="d-flex justify-content-between align-items-center mb-3">
