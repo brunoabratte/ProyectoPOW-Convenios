@@ -63,10 +63,25 @@ export default function RevisionesPage(){
         if (resultados == null)
             return;
 
-        let datos = await obtenerConvenios();
+        resultados.innerHTML = `
+            <div class="d-flex flex-column justify-content-center align-items-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-3 text-secondary">Cargando revisiones...</p>
+            </div>
+        `;
+
+        let datos;
+        try {
+            datos = await obtenerConvenios();
+        } catch {
+            resultados.innerHTML = `<p class="text-danger">No se pudieron obtener las revisiones.</p>`;
+            return;
+        }
 
         if (datos.status != 200) {
-            resultados.innerHTML = "<p>No se pudieron obtener los convenios.</p>";
+            resultados.innerHTML = "<p class=\"text-danger\">No se pudieron obtener las revisiones.</p>";
             return;
         }
 
