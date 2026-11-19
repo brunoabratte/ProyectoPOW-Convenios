@@ -25,7 +25,10 @@ class AlertaController extends Controller
         // Obtener solamente instrumentos visibles para el usuario
         // que tengan fecha de vencimiento registrada.
         $instrumentos = Instrumento::visiblesPara(Auth::user())
-            ->with(['tipoInstrumento', 'estado'])
+            ->with(['tipoInstrumento', 'estado', 'unidad'])
+            ->whereHas('estado', function ($query) {
+                $query->whereIn('nombre', ['firmado', 'aprobado']);
+            })
             ->whereNotNull('fecha_vencimiento')
             ->get();
 
@@ -50,6 +53,7 @@ class AlertaController extends Controller
                 'titulo' => $instrumento->titulo,
                 'tipo' => $instrumento->tipoInstrumento,
                 'estado' => $instrumento->estado,
+                'unidad' => $instrumento->unidad,
                 'fecha_vencimiento' => $vencimiento->toDateString(),
                 'fecha_preaviso' => $fechaPreaviso->toDateString(),
                 'link' => '/panel/convenios/' . $instrumento->id_instrumento,
