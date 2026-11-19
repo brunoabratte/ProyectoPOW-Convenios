@@ -210,10 +210,12 @@ CREATE TABLE `instituciones` (
 --
 
 INSERT INTO `instituciones` (`id_institucion`, `nombre`, `tipo_institucion`, `cuit`, `domicilio`, `localidad`, `provincia`, `correo`, `telefono`, `created_at`, `updated_at`) VALUES
-(1, 'Municipalidad de General Pico', 'organismo_publico', '30999999991', 'Avenida San Martín 500', 'General Pico', 'La Pampa', 'contacto@municipalidad.test', '2302987654', '2026-11-06 20:53:23', '2026-11-06 21:03:27'),
-(2, 'Universidad Nacional de prueba', 'universidad', '30987654321', 'Calle Falsa 123', 'General Pico', 'La Pampa', 'contacto@universidad.test', '2302123456', '2026-11-08 10:09:15', '2026-11-08 10:09:15'),
-(3, 'Institución de prueba Administración actualizada', 'organismo_publico', '30999888777', 'Calle de prueba 123', 'General Pico', 'La Pampa', 'institucion.audit@test.com', '2302998877', '2026-11-08 20:01:28', '2026-11-09 20:30:58'),
-(4, 'Institución de prueba Administración', 'organismo_publico', '30911222334', 'Calle de prueba 100', 'General Pico', 'La Pampa', 'admin.institucion@test.com', '2302112233', '2026-11-09 20:30:39', '2026-11-09 20:30:39');
+(1, 'Municipalidad de General Pico', 'Gobierno', NULL, 'Domicilio institucional', 'General Pico', 'La Pampa', 'municipalidad.gp.contacto@gmail.com', '2302472183', '2026-11-19 10:00:00', '2026-11-19 10:00:00'),
+(2, 'Establecimiento Asistencial Gobernador Centeno', 'Salud', NULL, 'Domicilio institucional', 'General Pico', 'La Pampa', 'gobernador.centeno.gp@gmail.com', '2302531746', '2026-11-19 10:00:00', '2026-11-19 10:00:00'),
+(3, 'Polo Científico Tecnológico / Agencia CITIA', 'Tecnología', NULL, 'Domicilio institucional', 'General Pico', 'La Pampa', 'polo.citia.gp@gmail.com', '2302684219', '2026-11-19 10:00:00', '2026-11-19 10:00:00'),
+(4, 'CORPICO (Cooperativa Regional de Electricidad)', 'Cooperativa', NULL, 'Domicilio institucional', 'General Pico', 'La Pampa', 'corpico.gp.contacto@gmail.com', '2302395827', '2026-11-19 10:00:00', '2026-11-19 10:00:00'),
+(5, 'ISEF (Instituto Superior de Educación Física)', 'Educación', NULL, 'Domicilio institucional', 'General Pico', 'La Pampa', 'isef.gp.contacto@gmail.com', '2302721604', '2026-11-19 10:00:00', '2026-11-19 10:00:00'),
+(6, 'Universidad Nacional de La Pampa (UNLPam)', 'Educación', NULL, 'Domicilio institucional', 'General Pico', 'La Pampa', 'unlpam.gp.contacto@gmail.com', '2302458932', '2026-11-19 10:00:00', '2026-11-19 10:00:00');
 
 -- --------------------------------------------------------
 
@@ -408,14 +410,14 @@ CREATE TABLE `partes` (
 --
 
 INSERT INTO `partes` (`id_parte`, `id_instrumento`, `id_institucion`, `caracter_parte`, `id_persona_representante`, `representante_cargo`, `firmado_en`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 'Parte firmante principal', 1, 'Secretario de Ciencia y Técnica', NULL, '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
-(2, 1, 2, 'Parte firmante académica', 1, 'Decano/a', NULL, '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
-(3, 2, 1, 'Parte firmante institucional', 1, 'Secretario de Ciencia y Técnica', NULL, '2026-11-18 10:05:00', '2026-11-18 10:05:00'),
-(4, 2, 2, 'Parte firmante académica', 1, 'Decano/a', NULL, '2026-11-18 10:05:00', '2026-11-18 10:05:00'),
-(5, 3, 1, 'Parte firmante institucional', 1, 'Secretario de Coordinación y Planeamiento', NULL, '2026-11-18 10:10:00', '2026-11-18 10:10:00'),
-(6, 3, 2, 'Institución receptora', 1, 'Decano/a', NULL, '2026-11-18 10:10:00', '2026-11-18 10:10:00'),
-(7, 4, 1, 'Parte firmante institucional', 1, 'Rector/a', '2026-11-18', '2026-11-18 10:15:00', '2026-11-18 10:18:00'),
-(8, 4, 2, 'Parte firmante académica', 1, 'Decano/a', '2026-11-18', '2026-11-18 10:15:00', '2026-11-18 10:18:00');
+(1, 1, 6, 'Parte firmante principal', 1, 'Secretario de Ciencia y Técnica', NULL, '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
+(2, 1, 3, 'Parte firmante tecnológica', 1, 'Representante institucional', NULL, '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
+(3, 2, 6, 'Parte firmante institucional', 1, 'Secretario de Ciencia y Técnica', NULL, '2026-11-18 10:05:00', '2026-11-18 10:05:00'),
+(4, 2, 1, 'Parte firmante municipal', 1, 'Representante municipal', NULL, '2026-11-18 10:05:00', '2026-11-18 10:05:00'),
+(5, 3, 6, 'Parte firmante institucional', 1, 'Secretario de Coordinación y Planeamiento', NULL, '2026-11-18 10:10:00', '2026-11-18 10:10:00'),
+(6, 3, 5, 'Institución receptora', 1, 'Representante académico', NULL, '2026-11-18 10:10:00', '2026-11-18 10:10:00'),
+(7, 4, 6, 'Parte firmante institucional', 1, 'Rector/a', '2026-11-18', '2026-11-18 10:15:00', '2026-11-18 10:18:00'),
+(8, 4, 4, 'Parte firmante cooperativa', 1, 'Representante institucional', '2026-11-18', '2026-11-18 10:15:00', '2026-11-18 10:18:00');
 
 -- --------------------------------------------------------
 
@@ -475,7 +477,7 @@ CREATE TABLE `pasantias` (
 --
 
 INSERT INTO `pasantias` (`id_pasantia`, `id_instrumento`, `id_persona_estudiante`, `id_persona_tutor`, `id_institucion_receptora`, `id_persona_responsable_receptor`, `carrera`, `fecha_inicio`, `fecha_fin`, `horas_semanales`, `actividades`, `asignacion`, `seguro`, `estado`, `created_at`, `updated_at`) VALUES
-(1, 3, 1, 1, 2, 1, 'Ingeniería en Sistemas', '2026-12-01', '2027-05-31', 20, 'Diseño de casos de prueba, ejecución de pruebas funcionales, registro de incidencias y elaboración de documentación técnica.', 'Asignación estímulo mensual según normativa vigente', 'Cobertura de accidentes personales contratada por la institución receptora', 'planificada', '2026-11-18 10:10:00', '2026-11-18 10:10:00');
+(1, 3, 1, 1, 5, 1, 'Ingeniería en Sistemas', '2026-12-01', '2027-05-31', 20, 'Diseño de casos de prueba, ejecución de pruebas funcionales, registro de incidencias y elaboración de documentación técnica.', 'Asignación estímulo mensual según normativa vigente', 'Cobertura de accidentes personales contratada por la institución receptora', 'planificada', '2026-11-18 10:10:00', '2026-11-18 10:10:00');
 
 -- --------------------------------------------------------
 
@@ -531,10 +533,12 @@ CREATE TABLE `personas` (
 --
 
 INSERT INTO `personas` (`id_persona`, `nombre`, `apellido`, `dni`, `correo`, `telefono`, `id_institucion`, `created_at`, `updated_at`) VALUES
-(1, 'Carlos', 'Gonzalez', '40123456', 'carlos@gmail.com', '2302112233', 2, '2026-11-08 10:09:39', '2026-11-08 10:09:39'),
-(2, 'Juan', 'Pérez actualizado', '45999888', 'juan.actualizado@test.com', '2302998877', 1, '2026-11-08 20:02:05', '2026-11-08 20:02:20'),
-(3, 'Persona', 'Prueba', '99999999', 'persona.prueba@test.com', '2302000000', 1, '2026-11-09 21:16:04', '2026-11-09 21:16:04'),
-(4, 'Persona', 'Prueba', '99999991', 'persona.prueba@test.com', '2302000000', 1, '2026-11-09 21:19:00', '2026-11-09 21:19:00');
+(1, 'Valentina', 'Fernández', '43812490', 'valen.fernandez99@gmail.com', '2302541820', 6, '2026-11-19 10:00:00', '2026-11-19 10:00:00'),
+(2, 'Martín', 'Sosa', '36429105', 'martinsosa.gp@gmail.com', '2302418934', 1, '2026-11-19 10:00:00', '2026-11-19 10:00:00'),
+(3, 'Camila', 'Pereyra', '45190332', 'cami.pereyra03@gmail.com', '2302627411', 6, '2026-11-19 10:00:00', '2026-11-19 10:00:00'),
+(4, 'Lucas', 'Mansilla', '33874612', 'lucas.mansilla88@gmail.com', '2302510948', 2, '2026-11-19 10:00:00', '2026-11-19 10:00:00'),
+(5, 'Sofía', 'Rodríguez', '41258740', 'sofia.rodriguez.lp@gmail.com', '2302483329', 6, '2026-11-19 10:00:00', '2026-11-19 10:00:00'),
+(6, 'Nicolás', 'Cabrera', '38910244', 'nico.cabrera95@gmail.com', '2302604715', 4, '2026-11-19 10:00:00', '2026-11-19 10:00:00');
 
 -- --------------------------------------------------------
 
@@ -902,7 +906,7 @@ ALTER TABLE `historial_estados`
 -- AUTO_INCREMENT de la tabla `instituciones`
 --
 ALTER TABLE `instituciones`
-  MODIFY `id_institucion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_institucion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `instrumentos`
@@ -968,7 +972,7 @@ ALTER TABLE `personal_access_tokens`
 -- AUTO_INCREMENT de la tabla `personas`
 --
 ALTER TABLE `personas`
-  MODIFY `id_persona` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_persona` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `tipos_instrumento`

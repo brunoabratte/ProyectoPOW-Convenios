@@ -372,7 +372,7 @@ export default function PanelPage(){
                     onClick={exportarConveniosCSV}
                     disabled={cargando || convenios.length === 0}
                 >
-                    Exportar convenios CSV
+                    Exportar convenios Excel
                 </button>
             </div>
 
