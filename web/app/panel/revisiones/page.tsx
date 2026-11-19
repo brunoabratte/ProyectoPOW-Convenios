@@ -160,8 +160,15 @@ export default function RevisionesPage(){
         let sinResolver = observaciones.filter((o: any) => o.estado !== "resuelta").length;
 
         let htmlPartes = "";
-        for (let i = 0; i < partes.length; i++)
-            htmlPartes += `<li>${escapar(partes[i].caracter_parte)}</li>`;
+        for (let i = 0; i < partes.length; i++) {
+            let nombreInstitucion = partes[i].institucion?.nombre;
+            let caracterParte = partes[i].caracter_parte;
+            let textoParte = nombreInstitucion
+                ? `${escapar(nombreInstitucion)}${caracterParte ? ` (${escapar(caracterParte)})` : ""}`
+                : escapar(caracterParte);
+
+            htmlPartes += `<li>${textoParte}</li>`;
+        }
 
         let avisoPartes = partes.length < 2
             ? `<p class="text-danger">Se necesitan al menos dos partes para aprobar.</p>`
@@ -254,7 +261,7 @@ export default function RevisionesPage(){
                 <textarea id="nueva-observacion" class="form-control mb-2" rows="3"></textarea>
                 <button type="button" class="btn btn-warning mb-4" id="agregar-observacion">Agregar observación</button>
 
-                <label for="fundamento-estado" class="form-label">Fundamento de la decisión</label>
+                <label for="fundamento-estado" class="form-label d-block mt-3">Fundamento de la decisión</label>
                 <textarea id="fundamento-estado" class="form-control mb-2" rows="3" maxlength="1000"></textarea>
                 <small class="d-block mb-2 text-muted">
                     La aprobación es administrativa y no equivale a firma digital ni a certificación de legalidad.

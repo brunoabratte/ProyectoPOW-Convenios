@@ -59,7 +59,7 @@ class InstrumentoController extends Controller
                 'unidad',
                 'estado',
                 'creador',
-                'partes',
+                'partes.institucion',
                 'documentos'
             ])
             ->findOrFail($id);
