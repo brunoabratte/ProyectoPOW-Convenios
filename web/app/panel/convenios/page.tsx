@@ -724,6 +724,7 @@ function actualizarSeccionPasantias() {
         parte.append("caracter_parte", nombresCaracter[i] ?? `Parte ${i + 1}`);
 
         let resParte = await registrarParte(parte);
+        console.log("Respuesta al registrar parte:", resParte);
         if (resParte.datos == null)
             avisos += "\n- No se pudo registrar la parte " + (i + 1);
     }
