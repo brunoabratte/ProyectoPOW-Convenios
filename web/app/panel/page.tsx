@@ -5,7 +5,6 @@ import { obtenerConvenios, obtenerParticipaciones } from "@/services/conveniosSe
 import { obtenerInstituciones } from "@/services/institucionesService";
 import { useEffect, useState } from "react";
 
-// Mismo valor que en la pantalla de Alertas: si cambiás uno, cambiá el otro
 const DIAS_ALERTA = 30;
 
 export default function PanelPage(){
@@ -18,7 +17,7 @@ export default function PanelPage(){
     }, []);
 
     // Evita que un texto con etiquetas HTML se ejecute al mostrarlo con innerHTML.
-    // Si el dato viene vacío devuelve "-".
+    // Si el dato viene vacio devuelve "-".
     function escapar(texto: any) {
         if (texto === null || texto === undefined || texto === "")
             return "-";
@@ -30,7 +29,6 @@ export default function PanelPage(){
             .replace(/"/g, "");
     }
 
-    // Se agrega la hora para que la fecha no se corra un día por la zona horaria
     function crearFecha(texto: string) {
         return new Date(String(texto).substring(0, 10) + "T00:00:00");
     }
@@ -42,7 +40,7 @@ export default function PanelPage(){
             elemento.textContent = String(valor);
     }
 
-    // Suma 1 al contador de una categoría (por ejemplo, "firmado": 3)
+    // Suma 1 al contador de una categoria (por ejemplo, "firmado": 3)
     function sumar(conteo: any, nombre: string) {
         conteo[nombre] = (conteo[nombre] ?? 0) + 1;
     }
@@ -54,7 +52,6 @@ export default function PanelPage(){
         return "vence el " + crearFecha(convenio.fecha_vencimiento).toLocaleDateString("es-AR");
     }
 
-    // Neutraliza fórmulas (=, +, -, @) y escapa comillas para exportar CSV seguro
     function sanitizarCeldaCSV(valor: any): string {
         if (valor === null || valor === undefined || valor === "")
             return '""';
