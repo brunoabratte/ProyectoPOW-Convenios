@@ -2,12 +2,14 @@
 
 import { verificarSesion } from "@/services/authService";
 import { obtenerConvenios } from "@/services/conveniosService";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import SpinnerCarga from "@/components/SpinnerCarga";
 
 // Un convenio sin plazo de preaviso se considera "proximo a vencer" cuando faltan estos días o menos
 const DIAS_ALERTA = 30;
 
 export default function AlertasPage(){
+    const [cargando, setCargando] = useState(true);
     useEffect(() => {
         verificarSesion();
         listarAlertas();
@@ -94,76 +96,84 @@ export default function AlertasPage(){
     }
 
     async function listarAlertas() {
-        let resultados = document.getElementById("resultados-alertas");
 
-        if (resultados == null)
-            return;
+        setCargando(true);
 
-        let datos = await obtenerConvenios();
+    try {
+            let resultados = document.getElementById("resultados-alertas");
 
-        if (datos.status != 200) {
-            resultados.innerHTML = "<p>No se pudieron obtener los convenios.</p>";
-            return;
-        }
+            if (resultados == null)
+                return;
 
-        let hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
+            let datos = await obtenerConvenios();
 
-        let vencidos: any[] = [];
-        let enPreaviso: any[] = [];
-        let proximos: any[] = [];
-        let sinVencimiento = 0;
-
-        for (let i = 0; i < datos.data.length; i++) {
-            let c = datos.data[i];
-            let estado = c.estado?.nombre;
-
-            // Solo convenios en vigor: no se avisa de borradores, rescindidos ni archivados
-            if (estado !== "firmado" && estado !== "aprobado")
-                continue;
-
-            if (c.fecha_vencimiento == null) {
-                sinVencimiento++;
-                continue;
+            if (datos.status != 200) {
+                resultados.innerHTML = "<p>No se pudieron obtener los convenios.</p>";
+                return;
             }
 
-            let vencimiento = crearFecha(c.fecha_vencimiento);
-            let dias = Math.round((vencimiento.getTime() - hoy.getTime()) / 86400000);
-            let preaviso = Number(c.plazo_preaviso ?? 0);
+            let hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
 
-            // Fecha desde la cual corre el preaviso = vencimiento menos los días de preaviso
-            let fechaPreaviso = new Date(vencimiento);
-            fechaPreaviso.setDate(fechaPreaviso.getDate() - preaviso);
+            let vencidos: any[] = [];
+            let enPreaviso: any[] = [];
+            let proximos: any[] = [];
+            let sinVencimiento = 0;
 
-            let alerta = { convenio: c, vencimiento: vencimiento, dias: dias, preaviso: preaviso, fechaPreaviso: fechaPreaviso };
+            for (let i = 0; i < datos.data.length; i++) {
+                let c = datos.data[i];
+                let estado = c.estado?.nombre;
 
-            if (dias < 0)
-                vencidos.push(alerta);
-            else if (preaviso > 0 && dias <= preaviso)
-                enPreaviso.push(alerta);
-            else if (dias <= DIAS_ALERTA)
-                proximos.push(alerta);
-        }
+                // Solo convenios en vigor: no se avisa de borradores, rescindidos ni archivados
+                if (estado !== "firmado" && estado !== "aprobado")
+                    continue;
 
-        if (vencidos.length == 0 && enPreaviso.length == 0 && proximos.length == 0) {
-            resultados.innerHTML = `<p class="text-muted">No hay alertas de vencimiento por el momento.</p>`;
-        }
-        else {
-            resultados.innerHTML = `
-            <h5 class="titulo h5">Vencidos (${vencidos.length})</h5>
-            ${armarTabla(vencidos)}
-            <h5 class="titulo h5">En per&iacute;odo de preaviso (${enPreaviso.length})</h5>
-            ${armarTabla(enPreaviso)}
-            <h5 class="titulo h5">Pr&oacute;ximos a vencer (${proximos.length})</h5>
-            ${armarTabla(proximos)}
-            `;
-        }
+                if (c.fecha_vencimiento == null) {
+                    sinVencimiento++;
+                    continue;
+                }
 
-        let nota = document.getElementById("nota-sin-vencimiento");
-        if (nota != null)
-            nota.innerHTML = sinVencimiento > 0
-                ? `${sinVencimiento} convenio(s) en vigor con <em>sin vencimiento registrado</em>.`
-                : "";
+                let vencimiento = crearFecha(c.fecha_vencimiento);
+                let dias = Math.round((vencimiento.getTime() - hoy.getTime()) / 86400000);
+                let preaviso = Number(c.plazo_preaviso ?? 0);
+
+                // Fecha desde la cual corre el preaviso = vencimiento menos los días de preaviso
+                let fechaPreaviso = new Date(vencimiento);
+                fechaPreaviso.setDate(fechaPreaviso.getDate() - preaviso);
+
+                let alerta = { convenio: c, vencimiento: vencimiento, dias: dias, preaviso: preaviso, fechaPreaviso: fechaPreaviso };
+
+                if (dias < 0)
+                    vencidos.push(alerta);
+                else if (preaviso > 0 && dias <= preaviso)
+                    enPreaviso.push(alerta);
+                else if (dias <= DIAS_ALERTA)
+                    proximos.push(alerta);
+            }
+
+            if (vencidos.length == 0 && enPreaviso.length == 0 && proximos.length == 0) {
+                resultados.innerHTML = `<p class="text-muted">No hay alertas de vencimiento por el momento.</p>`;
+            }
+            else {
+                resultados.innerHTML = `
+                <h5 class="titulo h5">Vencidos (${vencidos.length})</h5>
+                ${armarTabla(vencidos)}
+                <h5 class="titulo h5">En per&iacute;odo de preaviso (${enPreaviso.length})</h5>
+                ${armarTabla(enPreaviso)}
+                <h5 class="titulo h5">Pr&oacute;ximos a vencer (${proximos.length})</h5>
+                ${armarTabla(proximos)}
+                `;
+            }
+
+            let nota = document.getElementById("nota-sin-vencimiento");
+            if (nota != null)
+                nota.innerHTML = sinVencimiento > 0
+                    ? `${sinVencimiento} convenio(s) en vigor con <em>sin vencimiento registrado</em>.`
+                    : "";
+        } finally {
+            setCargando(false);
+        }      
+            
     }
 
     return (
@@ -174,8 +184,20 @@ export default function AlertasPage(){
                     Convenios firmados o aprobados vencidos, en per&iacute;odo de preaviso o que vencen en los pr&oacute;ximos {DIAS_ALERTA} d&iacute;as
                 </small>
             </div>
-            <div id="resultados-alertas"></div>
-            <small id="nota-sin-vencimiento" className="text-muted"></small>
+            {cargando && (
+                <SpinnerCarga mensaje="Cargando alertas..." />
+            )}
+
+            <div
+                id="resultados-alertas"
+                style={{ display: cargando ? "none" : "block" }}
+            ></div>
+
+            <small
+                id="nota-sin-vencimiento"
+                className="text-muted"
+                style={{ display: cargando ? "none" : "block" }}
+            ></small>
         </section>
     );
 }

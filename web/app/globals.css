@@ -645,3 +645,17 @@ button, input, select, textarea {
     font-size: 12px;
     font-weight: bold;
 }
+
+.contadorAlertas {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.puntoAlerta {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #fff;
+}

@@ -77,6 +77,7 @@ export default function Sidebar() {
 
                             {cantidadAlertas > 0 && (
                                 <span className="contadorAlertas">
+                                    <span className="puntoAlerta"></span>
                                     {cantidadAlertas}
                                 </span>
                             )}
