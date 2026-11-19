@@ -3,11 +3,14 @@
 import { verificarSesion } from "@/services/authService";
 import { obtenerPersonas, obtenerPersona, registrar } from "@/services/personasService";
 import { obtenerInstituciones } from "@/services/institucionesService";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import SpinnerCarga from "@/components/SpinnerCarga";
 
 const PERSONAS_POR_PAGINA = 10;
 
 export default function PersonasPage(){
+    const [cargando, setCargando] = useState(true);
+
     useEffect(() => {
         verificarSesion();
         listarPersonas(1);
@@ -76,86 +79,92 @@ export default function PersonasPage(){
     }
 
     async function listarPersonas(pagina: number = 1) {
-        let resultados = document.getElementById("resultados-personas");
+        setCargando(true);
 
-        if (resultados == null)
-            return;
+        try {
+            let resultados = document.getElementById("resultados-personas");
 
-        let datos = await obtenerPersonas();
+            if (resultados == null)
+                return;
 
-        if (!datos || !Array.isArray(datos.datos)) {
-            resultados.innerHTML = "<p>No se pudieron obtener las personas.</p>";
-            return;
-        }
+            let datos = await obtenerPersonas();
 
-        if (datos.datos.length == 0) {
-            resultados.innerHTML = `<p class="text-muted">Todavía no hay personas registradas.</p>`;
-            return;
-        }
+            if (!datos || !Array.isArray(datos.datos)) {
+                resultados.innerHTML = "<p>No se pudieron obtener las personas.</p>";
+                return;
+            }
 
-        // Cálculo de paginación
-        let totalRegistros = datos.datos.length;
-        let totalPaginas = Math.ceil(totalRegistros / PERSONAS_POR_PAGINA);
-        let paginaValida = Math.min(Math.max(1, pagina), totalPaginas);
-        let inicio = (paginaValida - 1) * PERSONAS_POR_PAGINA;
-        let personasPagina = datos.datos.slice(inicio, inicio + PERSONAS_POR_PAGINA);
+            if (datos.datos.length == 0) {
+                resultados.innerHTML = `<p class="text-muted">Todavía no hay personas registradas.</p>`;
+                return;
+            }
 
-        let filas = "";
-        for (let i = 0; i < personasPagina.length; i++) {
-            let persona = personasPagina[i];
+            // Cálculo de paginación
+            let totalRegistros = datos.datos.length;
+            let totalPaginas = Math.ceil(totalRegistros / PERSONAS_POR_PAGINA);
+            let paginaValida = Math.min(Math.max(1, pagina), totalPaginas);
+            let inicio = (paginaValida - 1) * PERSONAS_POR_PAGINA;
+            let personasPagina = datos.datos.slice(inicio, inicio + PERSONAS_POR_PAGINA);
 
-            filas += `
-            <tr>
-                <td>${escapar(persona.apellido)}, ${escapar(persona.nombre)}</td>
-                <td>${persona.institucion ? escapar(persona.institucion.nombre) : "Sin institución"}</td>
-                <td>${escapar(persona.correo)}</td>
-                <td>
-                    <button type="button" class="btn btn-info btn-detalles" data-id="${persona.id_persona}">
-                        DETALLES
-                    </button>
-                </td>
-            </tr>
-            `;
-        }
+            let filas = "";
+            for (let i = 0; i < personasPagina.length; i++) {
+                let persona = personasPagina[i];
 
-        resultados.innerHTML = `
-        <table class="table table-striped table-bordered rounded">
-            <thead>
+                filas += `
                 <tr>
-                    <th>Nombre</th>
-                    <th>Institución</th>
-                    <th>Correo</th>
-                    <th></th>
+                    <td>${escapar(persona.apellido)}, ${escapar(persona.nombre)}</td>
+                    <td>${persona.institucion ? escapar(persona.institucion.nombre) : "Sin institución"}</td>
+                    <td>${escapar(persona.correo)}</td>
+                    <td>
+                        <button type="button" class="btn btn-info btn-detalles" data-id="${persona.id_persona}">
+                            DETALLES
+                        </button>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>${filas}</tbody>
-        </table>
-        <div class="d-flex justify-content-between align-items-center mt-3">
-            <button type="button" class="btn btn-outline-secondary btn-pagina" data-pagina="${paginaValida - 1}"
-                ${paginaValida <= 1 ? "disabled" : ""}>Anterior</button>
-            <span>Página ${paginaValida} de ${totalPaginas} (${totalRegistros} registros)</span>
-            <button type="button" class="btn btn-outline-secondary btn-pagina" data-pagina="${paginaValida + 1}"
-                ${paginaValida >= totalPaginas ? "disabled" : ""}>Siguiente</button>
-        </div>
-        `;
+                `;
+            }
 
-        resultados.querySelectorAll(".btn-detalles").forEach((boton) => {
-            boton.addEventListener("click", () => {
-                let id = boton.getAttribute("data-id");
+            resultados.innerHTML = `
+            <table class="table table-striped table-bordered rounded">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Institución</th>
+                        <th>Correo</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>${filas}</tbody>
+            </table>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <button type="button" class="btn btn-outline-secondary btn-pagina" data-pagina="${paginaValida - 1}"
+                    ${paginaValida <= 1 ? "disabled" : ""}>Anterior</button>
+                <span>Página ${paginaValida} de ${totalPaginas} (${totalRegistros} registros)</span>
+                <button type="button" class="btn btn-outline-secondary btn-pagina" data-pagina="${paginaValida + 1}"
+                    ${paginaValida >= totalPaginas ? "disabled" : ""}>Siguiente</button>
+            </div>
+            `;
 
-                if (id != null)
-                    abrirDetalles(id);
+            resultados.querySelectorAll(".btn-detalles").forEach((boton) => {
+                boton.addEventListener("click", () => {
+                    let id = boton.getAttribute("data-id");
+
+                    if (id != null)
+                        abrirDetalles(id);
+                });
             });
-        });
 
-        resultados.querySelectorAll(".btn-pagina").forEach((boton) => {
-            boton.addEventListener("click", () => {
-                let numero = boton.getAttribute("data-pagina");
+            resultados.querySelectorAll(".btn-pagina").forEach((boton) => {
+                boton.addEventListener("click", () => {
+                    let numero = boton.getAttribute("data-pagina");
 
-                if (numero != null)
-                    listarPersonas(Number(numero));
+                    if (numero != null)
+                        listarPersonas(Number(numero));
+                });
             });
-        });
+        } finally {
+            setCargando(false);
+        }
     }
 
     async function abrirDetalles(id: string) {
@@ -274,7 +283,14 @@ export default function PersonasPage(){
                 <button className="btn btn-secondary" onClick={abrirModal}>+ Nueva persona</button>
             </div>
 
-            <div id="resultados-personas"></div>
+            {cargando && (
+                <SpinnerCarga mensaje="Cargando personas..." />
+            )}
+
+            <div
+                id="resultados-personas"
+                style={{ display: cargando ? "none" : "block" }}
+            ></div>
 
             <dialog id="ventanaRegistro" className="ventanaRegistro">
                 <div className="d-flex justify-content-between align-items-center mb-3">

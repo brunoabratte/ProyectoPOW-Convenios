@@ -2,11 +2,13 @@
 
 import { verificarSesion } from "@/services/authService";
 import { obtenerInstituciones, registrar } from "@/services/institucionesService";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import SpinnerCarga from "@/components/SpinnerCarga";
 
 const INSTITUCIONES_POR_PAGINA = 10;
 
 export default function InstitucionesPage(){
+    const [cargando, setCargando] = useState(true);
     useEffect(() => {
         verificarSesion();
         listarInstituciones(1);
@@ -32,81 +34,88 @@ export default function InstitucionesPage(){
     }
 
     async function listarInstituciones(pagina: number = 1){
-        let contenedor = document.getElementById("resultados");
-        let buscador = document.getElementById("buscador") as HTMLInputElement | null;
+        setCargando(true);
 
-        if (contenedor == null || buscador == null)
-            return;
+        try {
+            let contenedor = document.getElementById("resultados");
+            let buscador = document.getElementById("buscador") as HTMLInputElement | null;
 
-        let datos = await obtenerInstituciones();
+            if (contenedor == null || buscador == null)
+                return;
 
-        if (datos.status != 200 || !Array.isArray(datos.data)){
-            contenedor.innerHTML = `<p class="text-danger">No se pudieron obtener las instituciones.</p>`;
-            return;
-        }
+            let datos = await obtenerInstituciones();
 
-        let arreglo = datos.data;
-        let textoBuscado = buscador.value.trim().toLowerCase();
+            if (datos.status != 200 || !Array.isArray(datos.data)){
+                contenedor.innerHTML = `<p class="text-danger">No se pudieron obtener las instituciones.</p>`;
+                return;
+            }
 
-        let institucionesFiltradas = arreglo.filter((institucion: any) => {
-            return textoBuscado === "" ||
-                normalizar(institucion.nombre ?? "").includes(normalizar(textoBuscado));
-        });
+            let arreglo = datos.data;
+            let textoBuscado = buscador.value.trim().toLowerCase();
 
-        if (institucionesFiltradas.length === 0){
-            contenedor.innerHTML = `<p class="text-muted">No hay instituciones que coincidan con la búsqueda.</p>`;
-            return;
-        }
-
-        // Cálculo de paginación
-        let totalRegistros = institucionesFiltradas.length;
-        let totalPaginas = Math.ceil(totalRegistros / INSTITUCIONES_POR_PAGINA);
-        let paginaValida = Math.min(Math.max(1, pagina), totalPaginas);
-        let inicio = (paginaValida - 1) * INSTITUCIONES_POR_PAGINA;
-        let institucionesPagina = institucionesFiltradas.slice(inicio, inicio + INSTITUCIONES_POR_PAGINA);
-
-        let filas = "";
-        for (let i = 0; i < institucionesPagina.length; i++){
-            let inst = institucionesPagina[i];
-            filas += `
-            <tr>
-                <td>${escapar(inst.nombre)}</td>
-                <td>${escapar(inst.tipo_institucion)}</td>
-                <td>${inst.correo ? escapar(inst.correo) : "No disponible"}</td>
-                <td>${inst.telefono ? escapar(inst.telefono) : "No disponible"}</td>
-            </tr>
-            `;
-        }
-
-        // Se asigna todo después del await para evitar tablas duplicadas en React Strict Mode
-        contenedor.innerHTML = `
-        <table class="table table-striped table-bordered rounded">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Tipo de institución</th>
-                    <th>Correo electrónico</th>
-                    <th>Teléfono</th>
-                </tr>
-            </thead>
-            <tbody>${filas}</tbody>
-        </table>
-        <div class="d-flex justify-content-between align-items-center mt-3">
-            <button type="button" class="btn btn-outline-secondary btn-pagina" data-pagina="${paginaValida - 1}"
-                ${paginaValida <= 1 ? "disabled" : ""}>Anterior</button>
-            <span>Página ${paginaValida} de ${totalPaginas} (${totalRegistros} registros)</span>
-            <button type="button" class="btn btn-outline-secondary btn-pagina" data-pagina="${paginaValida + 1}"
-                ${paginaValida >= totalPaginas ? "disabled" : ""}>Siguiente</button>
-        </div>
-        `;
-
-        contenedor.querySelectorAll(".btn-pagina").forEach((boton) => {
-            boton.addEventListener("click", () => {
-                let numero = boton.getAttribute("data-pagina");
-                if (numero != null)
-                    listarInstituciones(Number(numero));
+            let institucionesFiltradas = arreglo.filter((institucion: any) => {
+                return textoBuscado === "" ||
+                    normalizar(institucion.nombre ?? "").includes(normalizar(textoBuscado));
             });
-        });
+
+            if (institucionesFiltradas.length === 0){
+                contenedor.innerHTML = `<p class="text-muted">No hay instituciones que coincidan con la búsqueda.</p>`;
+                return;
+            }
+
+            // Cálculo de paginación
+            let totalRegistros = institucionesFiltradas.length;
+            let totalPaginas = Math.ceil(totalRegistros / INSTITUCIONES_POR_PAGINA);
+            let paginaValida = Math.min(Math.max(1, pagina), totalPaginas);
+            let inicio = (paginaValida - 1) * INSTITUCIONES_POR_PAGINA;
+            let institucionesPagina = institucionesFiltradas.slice(inicio, inicio + INSTITUCIONES_POR_PAGINA);
+
+            let filas = "";
+            for (let i = 0; i < institucionesPagina.length; i++){
+                let inst = institucionesPagina[i];
+                filas += `
+                <tr>
+                    <td>${escapar(inst.nombre)}</td>
+                    <td>${escapar(inst.tipo_institucion)}</td>
+                    <td>${inst.correo ? escapar(inst.correo) : "No disponible"}</td>
+                    <td>${inst.telefono ? escapar(inst.telefono) : "No disponible"}</td>
+                </tr>
+                `;
+            }
+
+            // Se asigna todo después del await para evitar tablas duplicadas en React Strict Mode
+            contenedor.innerHTML = `
+            <table class="table table-striped table-bordered rounded">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Tipo de institución</th>
+                        <th>Correo electrónico</th>
+                        <th>Teléfono</th>
+                    </tr>
+                </thead>
+                <tbody>${filas}</tbody>
+            </table>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <button type="button" class="btn btn-outline-secondary btn-pagina" data-pagina="${paginaValida - 1}"
+                    ${paginaValida <= 1 ? "disabled" : ""}>Anterior</button>
+                <span>Página ${paginaValida} de ${totalPaginas} (${totalRegistros} registros)</span>
+                <button type="button" class="btn btn-outline-secondary btn-pagina" data-pagina="${paginaValida + 1}"
+                    ${paginaValida >= totalPaginas ? "disabled" : ""}>Siguiente</button>
+            </div>
+            `;
+
+            contenedor.querySelectorAll(".btn-pagina").forEach((boton) => {
+                boton.addEventListener("click", () => {
+                    let numero = boton.getAttribute("data-pagina");
+                    if (numero != null)
+                        listarInstituciones(Number(numero));
+                });
+            });
+        } finally {
+            setCargando(false);
+        }
+        
     }
 
     async function registrarInstitucion(){
@@ -239,7 +248,14 @@ export default function InstitucionesPage(){
                 </form>
                 <button type="button" className="btn btn-secondary" onClick={registrarInstitucion}>Registrar institución</button>
             </dialog>
-            <div id="resultados"></div>
+            {cargando && (
+                <SpinnerCarga mensaje="Cargando instituciones..." />
+            )}
+
+            <div
+                id="resultados"
+                style={{ display: cargando ? "none" : "block" }}
+            ></div>
         </section>
     );
 }
