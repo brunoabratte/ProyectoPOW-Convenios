@@ -30,7 +30,9 @@ class PasantiaPolicy
 
     public function create(User $user): bool
     {
-        return $user->esAdmin() || $user->esGestion();
+        return $user->esAdmin()
+            || $user->esAdministracion()
+            || $user->esGestion();
     }
 
     public function update(User $user, Pasantia $pasantia): bool

@@ -235,7 +235,7 @@ export default function ConveniosPage(){
     async function abrirModal() {
         if (!puedeCrearOEditarConvenios(rolUsuarioRef.current)) return;
         const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
-        await listarPersonas();
+        await Promise.all([listarPersonas(), listarInstitucionesSelect()]);
         setPasoActual(1);
         modal.showModal();
     }
@@ -494,10 +494,16 @@ function actualizarSeccionPasantias() {
             <input type="text" id="pasantia-carrera" class="form-control" placeholder="Carrera (ej: Ingeniería en Sistemas / Analista Programador)" />
             <div class="row g-2">
                 <div class="col-12 col-md-6">
-                    <input type="text" id="pasantia-tutor-academico" class="form-control" placeholder="Tutor académico (UNLPam)" />
+                    <label for="pasantia-tutor-academico" class="form-label">Tutor académico</label>
+                    <select id="pasantia-tutor-academico" class="form-select">
+                        ${armarOpcionesPersonas("Seleccione el tutor académico...")}
+                    </select>
                 </div>
                 <div class="col-12 col-md-6">
-                    <input type="text" id="pasantia-tutor-externo" class="form-control" placeholder="Tutor externo (Empresa / Institución)" />
+                    <label for="pasantia-responsable-receptor" class="form-label">Responsable de la institución receptora (opcional)</label>
+                    <select id="pasantia-responsable-receptor" class="form-select">
+                        ${armarOpcionesPersonas("Sin responsable asignado")}
+                    </select>
                 </div>
             </div>
             <div class="row g-2">
@@ -511,6 +517,12 @@ function actualizarSeccionPasantias() {
                     <input type="text" id="pasantia-seguro" class="form-control" placeholder="Seguro / Póliza ART" />
                 </div>
             </div>
+            <label for="pasantia-institucion-receptora" class="form-label mb-0">Institución receptora</label>
+            <select id="pasantia-institucion-receptora" class="form-select">
+                ${armarOpcionesInstituciones("Seleccione la institución receptora...")}
+            </select>
+            <label for="pasantia-actividades" class="form-label mb-0">Actividades de la pasantía</label>
+            <textarea id="pasantia-actividades" class="form-control" rows="3" placeholder="Describa las tareas que realizará el/la pasante..."></textarea>
         </div>
     `;
 }
@@ -927,8 +939,14 @@ function actualizarSeccionPasantias() {
             alert("Para un convenio de pasantía debés vincular al menos al pasante.");
             return;
         }
-        if (valor("pasantia-carrera") === "" || valor("pasantia-tutor-academico") === "" || valor("pasantia-carga-horaria") === "") {
-            alert("Completá al menos carrera, tutor académico y carga horaria de la pasantía.");
+        if (
+            valor("pasantia-carrera") === "" ||
+            valor("pasantia-tutor-academico") === "" ||
+            valor("pasantia-carga-horaria") === "" ||
+            valor("pasantia-institucion-receptora") === "" ||
+            valor("pasantia-actividades") === ""
+        ) {
+            alert("Completá carrera, tutor académico, carga horaria, institución receptora y actividades de la pasantía.");
             return;
         }
     }
@@ -1098,8 +1116,6 @@ function actualizarSeccionPasantias() {
     }
 
     // 4. Personas y pasantías
-    let primeraParticipacionId: string | null = null;
-
     for (let i = 0; i < personasSeleccionadas.length; i++) {
         let p = personasSeleccionadas[i];
         let participacion = new FormData();
@@ -1113,31 +1129,40 @@ function actualizarSeccionPasantias() {
         let resParticipacion = await registrarParticipacion(participacion);
         if (resParticipacion.datos == null && resParticipacion.data == null) {
             avisos += "\n- No se pudo vincular a una de las personas";
-        } else if (i === 0) {
-            let creado = resParticipacion.datos ?? resParticipacion.data;
-            primeraParticipacionId = String(creado.id_participacion ?? creado.id ?? "");
         }
     }
     
         if (esTipoPasantia() && personasSeleccionadas.length > 0) {
-        let pasantia = new FormData();
+        const pasante = personasSeleccionadas.find((persona) => normalizar(persona.rol).includes("pasante"))
+            ?? personasSeleccionadas[0];
+        const pasantia = new FormData();
         pasantia.append("id_instrumento", idInstrumento);
-        pasantia.append("id_persona", personasSeleccionadas[0].id_persona);
-        if (primeraParticipacionId)
-            pasantia.append("id_participacion", primeraParticipacionId);
+        pasantia.append("id_persona_estudiante", pasante.id_persona);
+        pasantia.append("id_persona_tutor", valor("pasantia-tutor-academico"));
+        pasantia.append("id_institucion_receptora", valor("pasantia-institucion-receptora"));
+        pasantia.append("fecha_inicio", pasante.fecha_inicio);
+        const fechaFinPasantia = pasante.fecha_fin;
+        if (fechaFinPasantia !== "")
+            pasantia.append("fecha_fin", fechaFinPasantia);
+        const responsableReceptor = valor("pasantia-responsable-receptor");
+        if (responsableReceptor !== "")
+            pasantia.append("id_persona_responsable_receptor", responsableReceptor);
         pasantia.append("carrera", valor("pasantia-carrera"));
-        pasantia.append("tutor_academico", valor("pasantia-tutor-academico"));
-        if (valor("pasantia-tutor-externo") !== "")
-            pasantia.append("tutor_externo", valor("pasantia-tutor-externo"));
-        pasantia.append("carga_horaria", valor("pasantia-carga-horaria"));
+        pasantia.append("horas_semanales", valor("pasantia-carga-horaria"));
+        pasantia.append("actividades", valor("pasantia-actividades"));
         if (valor("pasantia-asignacion") !== "")
-            pasantia.append("asignacion_estimulo", valor("pasantia-asignacion"));
+            pasantia.append("asignacion", valor("pasantia-asignacion"));
         if (valor("pasantia-seguro") !== "")
             pasantia.append("seguro", valor("pasantia-seguro"));
+        pasantia.append("estado", "planificada");
 
-        let resPasantia = await registrarPasantia(pasantia);
-        if (resPasantia.datos == null && resPasantia.data == null)
-            avisos += "\n- No se pudieron guardar los datos complementarios de la pasantía";
+        const resPasantia = await registrarPasantia(pasantia);
+        if (resPasantia.datos == null && resPasantia.data == null) {
+            const errores = resPasantia.errors
+                ? Object.values(resPasantia.errors).flat().join("; ")
+                : (resPasantia.mensaje ?? resPasantia.message ?? "Error no especificado por el servidor.");
+            avisos += "\n- No se pudieron guardar los datos complementarios de la pasantía: " + errores;
+        }
     }
 
     // 5. Documento
