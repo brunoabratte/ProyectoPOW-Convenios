@@ -28,14 +28,16 @@ class ParticipacionPersonaPolicy
 
     public function create(User $user): bool
     {
-        return $user->esAdmin() || $user->esGestion();
+        return $user->esAdmin()
+            || $user->esGestion()
+            || $user->esAdministracion();
     }
 
     public function update(User $user, ParticipacionPersona $participacion): bool
     {
         return $user->esAdmin()
             || (
-                $user->esGestion()
+                ($user->esGestion() || $user->esAdministracion())
                 && $user->puedeAccederAInstrumento($participacion->instrumento)
             );
     }

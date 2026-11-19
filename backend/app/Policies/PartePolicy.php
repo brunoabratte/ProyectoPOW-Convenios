@@ -28,14 +28,16 @@ class PartePolicy
 
     public function create(User $user): bool
     {
-        return $user->esAdmin() || $user->esGestion();
+        return $user->esAdmin()
+            || $user->esGestion()
+            || $user->esAdministracion();
     }
 
     public function update(User $user, Parte $parte): bool
     {
         return $user->esAdmin()
             || (
-                $user->esGestion()
+                ($user->esGestion() || $user->esAdministracion())
                 && $user->puedeAccederAInstrumento($parte->instrumento)
             );
     }
