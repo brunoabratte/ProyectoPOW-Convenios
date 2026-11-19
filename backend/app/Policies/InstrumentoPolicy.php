@@ -51,6 +51,7 @@ class InstrumentoPolicy
             || (
                 $user->esGestion()
                 && $user->puedeAccederAInstrumento($instrumento)
+                || $user->esAdministracion()
             );
     }
 
