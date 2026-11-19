@@ -82,16 +82,19 @@ class User extends Authenticatable
         return $this->rol === 'consulta';
     }
 
-    // Solamente el administrador tiene alcance global
+    // Administración, revisión y consulta pueden ver toda la institución.
     public function tieneAlcanceGlobal(): bool
     {
-        return $this->esAdmin();
+        return $this->esAdmin()
+            || $this->esAdministracion()
+            || $this->esRevision()
+            || $this->esConsulta();
     }
 
     // Comprueba si puede acceder a una unidad
     public function puedeAccederAUnidad(int $idUnidad): bool
     {
-        return $this->esAdmin()
+        return $this->tieneAlcanceGlobal()
             || (int) $this->id_unidad === $idUnidad;
     }
 

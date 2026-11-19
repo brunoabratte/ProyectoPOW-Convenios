@@ -44,63 +44,14 @@ CREATE TABLE `auditorias` (
 --
 
 INSERT INTO `auditorias` (`id_auditoria`, `id_usuario`, `accion`, `entidad`, `entidad_id`, `detalle`, `ip`, `created_at`, `updated_at`) VALUES
-(1, 2, 'crear', 'instrumentos', 3, '{\"codigo\":\"CONV-AUDIT-001\",\"titulo\":\"Convenio de prueba para auditor\\u00edas\",\"estado_inicial\":\"borrador\"}', '127.0.0.1', '2026-11-08 19:55:57', '2026-11-08 19:55:57'),
-(2, 2, 'actualizar', 'instrumentos', 3, '{\"campos_modificados\":[\"titulo\",\"notas\"],\"codigo\":\"CONV-AUDIT-001\",\"titulo\":\"Convenio de prueba para auditor\\u00edas actualizado\"}', '127.0.0.1', '2026-11-08 19:56:23', '2026-11-08 19:56:23'),
-(3, 2, 'cambiar_estado', 'instrumentos', 3, '{\"estado_anterior\":\"borrador\",\"estado_nuevo\":\"revision\",\"fundamento\":\"Se env\\u00eda a revisi\\u00f3n para probar el registro de auditor\\u00eda.\"}', '127.0.0.1', '2026-11-08 19:56:45', '2026-11-08 19:56:45'),
-(4, 2, 'crear', 'instituciones', 3, '{\"nombre\":\"Instituci\\u00f3n de prueba auditor\\u00eda\",\"tipo_institucion\":\"universidad\"}', '127.0.0.1', '2026-11-08 20:01:28', '2026-11-08 20:01:28'),
-(5, 2, 'actualizar', 'instituciones', 3, '{\"campos_modificados\":[\"nombre\",\"tipo_institucion\"],\"nombre\":\"Instituci\\u00f3n de prueba auditor\\u00eda actualizada\",\"tipo_institucion\":\"organismo_publico\"}', '127.0.0.1', '2026-11-08 20:01:47', '2026-11-08 20:01:47'),
-(6, 2, 'crear', 'personas', 2, '{\"nombre\":\"Juan\",\"apellido\":\"P\\u00e9rez\",\"dni\":\"45999888\"}', '127.0.0.1', '2026-11-08 20:02:05', '2026-11-08 20:02:05'),
-(7, 2, 'actualizar', 'personas', 2, '{\"campos_modificados\":[\"apellido\",\"correo\"],\"nombre\":\"Juan\",\"apellido\":\"P\\u00e9rez actualizado\"}', '127.0.0.1', '2026-11-08 20:02:20', '2026-11-08 20:02:20'),
-(8, 2, 'crear', 'partes', 2, '{\"id_instrumento\":2,\"id_institucion\":1,\"caracter_parte\":\"Parte firmante\"}', '127.0.0.1', '2026-11-08 21:04:07', '2026-11-08 21:04:07'),
-(9, 2, 'actualizar', 'partes', 2, '{\"campos_modificados\":[\"caracter_parte\",\"representante_cargo\"],\"id_instrumento\":2,\"id_institucion\":1}', '127.0.0.1', '2026-11-08 21:35:01', '2026-11-08 21:35:01'),
-(10, 2, 'actualizar', 'partes', 2, '{\"campos_modificados\":[\"caracter_parte\",\"representante_cargo\"],\"id_instrumento\":2,\"id_institucion\":1}', '127.0.0.1', '2026-11-08 21:35:29', '2026-11-08 21:35:29'),
-(11, 2, 'crear', 'instrumentos_relaciones', 6, '{\"id_instrumento_origen\":2,\"id_instrumento_destino\":3,\"tipo_relacion\":\"renueva\"}', '127.0.0.1', '2026-11-08 22:57:04', '2026-11-08 22:57:04'),
-(12, 2, 'actualizar', 'instrumentos_relaciones', 6, '{\"campos_modificados\":[\"tipo_relacion\",\"descripcion\"],\"id_instrumento_origen\":2,\"id_instrumento_destino\":3,\"tipo_relacion\":\"modifica\"}', '127.0.0.1', '2026-11-08 23:23:36', '2026-11-08 23:23:36'),
-(13, 2, 'actualizar', 'participaciones_personas', 1, '{\"campos_modificados\":[\"rol\",\"descripcion\"],\"id_persona\":1,\"id_instrumento\":1,\"rol\":\"Responsable actualizado\"}', '127.0.0.1', '2026-11-09 00:22:02', '2026-11-09 00:22:02'),
-(14, 2, 'crear', 'pasantias', 2, '{\"id_instrumento\":1,\"id_persona_estudiante\":1,\"id_persona_tutor\":1,\"id_institucion_receptora\":2,\"carrera\":\"Ingenier\\u00eda en Sistemas\",\"estado\":\"planificada\"}', '127.0.0.1', '2026-11-09 01:12:52', '2026-11-09 01:12:52'),
-(15, 2, 'actualizar', 'pasantias', 2, '{\"campos_modificados\":[\"carrera\",\"estado\"],\"id_instrumento\":1,\"id_persona_estudiante\":1,\"carrera\":\"Ingenier\\u00eda en Sistemas actualizada\",\"estado\":\"en_curso\"}', '127.0.0.1', '2026-11-09 01:13:19', '2026-11-09 01:13:19'),
-(16, 2, 'crear', 'documentos', 4, '{\"id_instrumento\":\"2\",\"nombre\":\"tp6.Recursividad-EstrucDatos2026.pdf\",\"tipo_documento\":\"principal\",\"version\":1}', '127.0.0.1', '2026-11-09 01:20:04', '2026-11-09 01:20:04'),
-(17, 2, 'crear_version', 'documentos', 5, '{\"id_instrumento\":1,\"id_documento_anterior\":2,\"nombre\":\"CU-02-consultar_catalogo.pdf\",\"tipo_documento\":\"principal\",\"version_anterior\":2,\"version_nueva\":3}', '127.0.0.1', '2026-11-09 01:20:33', '2026-11-09 01:20:33'),
-(18, 2, 'crear_version', 'documentos', 6, '{\"id_instrumento\":2,\"id_documento_anterior\":4,\"nombre\":\"CU-02-consultar_catalogo.pdf\",\"tipo_documento\":\"principal\",\"version_anterior\":1,\"version_nueva\":2}', '127.0.0.1', '2026-11-09 01:20:53', '2026-11-09 01:20:53'),
-(19, 2, 'crear', 'documentos', 7, '{\"id_instrumento\":\"3\",\"nombre\":\"tp4.Listas 2026.docx.pdf\",\"tipo_documento\":\"anexo\",\"version\":1}', '127.0.0.1', '2026-11-09 01:34:16', '2026-11-09 01:34:16'),
-(20, 2, 'crear', 'documentos', 8, '{\"id_instrumento\":\"3\",\"nombre\":\"tp5.Lambda2026.pdf\",\"tipo_documento\":\"principal\",\"version\":1}', '127.0.0.1', '2026-11-09 01:39:02', '2026-11-09 01:39:02'),
-(21, 2, 'crear_version', 'documentos', 9, '{\"id_instrumento\":3,\"id_documento_anterior\":7,\"nombre\":\"TP Integrador 1. L\\u00f3gica-2026 (2).pdf\",\"tipo_documento\":\"anexo\",\"version_anterior\":1,\"version_nueva\":2}', '127.0.0.1', '2026-11-09 02:30:38', '2026-11-09 02:30:38'),
-(22, 2, 'crear_version', 'documentos', 10, '{\"id_instrumento\":3,\"id_documento_anterior\":9,\"nombre\":\"TP03 OCL_2026.docx (1).pdf\",\"tipo_documento\":\"anexo\",\"version_anterior\":2,\"version_nueva\":3}', '127.0.0.1', '2026-11-09 03:27:14', '2026-11-09 03:27:14'),
-(23, 2, 'crear', 'observaciones', 2, '{\"id_instrumento\":1,\"id_estado_instrumento\":1,\"estado\":\"pendiente\"}', '127.0.0.1', '2026-11-09 04:38:59', '2026-11-09 04:38:59'),
-(24, 2, 'responder', 'observaciones', 2, '{\"estado_anterior\":\"pendiente\",\"estado_nuevo\":\"respondida\"}', '127.0.0.1', '2026-11-09 04:39:23', '2026-11-09 04:39:23'),
-(25, 2, 'resolver', 'observaciones', 2, '{\"estado_anterior\":\"respondida\",\"estado_nuevo\":\"resuelta\"}', '127.0.0.1', '2026-11-09 04:40:09', '2026-11-09 04:40:09'),
-(26, 2, 'crear', 'observaciones', 3, '{\"id_instrumento\":3,\"id_estado_instrumento\":2,\"estado\":\"pendiente\"}', '127.0.0.1', '2026-11-09 07:11:51', '2026-11-09 07:11:51'),
-(27, 2, 'responder', 'observaciones', 3, '{\"estado_anterior\":\"pendiente\",\"estado_nuevo\":\"respondida\"}', '127.0.0.1', '2026-11-09 07:13:16', '2026-11-09 07:13:16'),
-(28, 2, 'resolver', 'observaciones', 3, '{\"estado_anterior\":\"respondida\",\"estado_nuevo\":\"resuelta\"}', '127.0.0.1', '2026-11-09 07:13:46', '2026-11-09 07:13:46'),
-(29, 3, 'crear', 'instrumentos', 4, '{\"codigo\":\"CONV-GEST-001\",\"titulo\":\"Convenio de prueba para Gesti\\u00f3n\",\"estado_inicial\":\"borrador\"}', '127.0.0.1', '2026-11-09 18:21:05', '2026-11-09 18:21:05'),
-(30, 3, 'cambiar_estado', 'instrumentos', 4, '{\"estado_anterior\":\"borrador\",\"estado_nuevo\":\"revision\",\"fundamento\":\"Env\\u00edo del instrumento para revisi\\u00f3n.\"}', '127.0.0.1', '2026-11-09 18:34:19', '2026-11-09 18:34:19'),
-(31, 4, 'cambiar_estado', 'instrumentos', 4, '{\"estado_anterior\":\"revision\",\"estado_nuevo\":\"aprobado\",\"fundamento\":\"Instrumento revisado y aprobado.\"}', '127.0.0.1', '2026-11-09 19:13:28', '2026-11-09 19:13:28'),
-(32, 4, 'crear', 'partes', 3, '{\"id_instrumento\":4,\"id_institucion\":1,\"caracter_parte\":\"Parte firmante principal\"}', '127.0.0.1', '2026-11-09 19:17:54', '2026-11-09 19:17:54'),
-(33, 4, 'crear', 'partes', 4, '{\"id_instrumento\":4,\"id_institucion\":2,\"caracter_parte\":\"Parte firmante secundaria\"}', '127.0.0.1', '2026-11-09 19:18:17', '2026-11-09 19:18:17'),
-(34, 4, 'cambiar_estado', 'instrumentos', 4, '{\"estado_anterior\":\"revision\",\"estado_nuevo\":\"aprobado\",\"fundamento\":\"Instrumento revisado. Cuenta con las dos partes firmantes requeridas.\"}', '127.0.0.1', '2026-11-09 19:24:13', '2026-11-09 19:24:13'),
-(35, 4, 'cambiar_estado', 'instrumentos', 4, '{\"estado_anterior\":\"revision\",\"estado_nuevo\":\"borrador\",\"fundamento\":\"Se devuelve el instrumento a Gesti\\u00f3n para corregir observaciones.\"}', '127.0.0.1', '2026-11-09 19:25:22', '2026-11-09 19:25:22'),
-(36, 3, 'actualizar', 'instrumentos', 4, '{\"campos_modificados\":[\"titulo\",\"objeto\",\"alcance\"],\"codigo\":\"CONV-GEST-001\",\"titulo\":\"Convenio de cooperaci\\u00f3n acad\\u00e9mica corregido\"}', '127.0.0.1', '2026-11-09 19:26:44', '2026-11-09 19:26:44'),
-(37, 3, 'cambiar_estado', 'instrumentos', 4, '{\"estado_anterior\":\"borrador\",\"estado_nuevo\":\"revision\",\"fundamento\":\"Se corrigieron las observaciones y se reenv\\u00eda el instrumento para revisi\\u00f3n.\"}', '127.0.0.1', '2026-11-09 19:27:21', '2026-11-09 19:27:21'),
-(38, 4, 'cambiar_estado', 'instrumentos', 4, '{\"estado_anterior\":\"revision\",\"estado_nuevo\":\"aprobado\",\"fundamento\":\"Se verificaron las correcciones y se aprueba el instrumento.\"}', '127.0.0.1', '2026-11-09 19:28:16', '2026-11-09 19:28:16'),
-(39, 2, 'crear', 'instituciones', 4, '{\"nombre\":\"Instituci\\u00f3n de prueba Administraci\\u00f3n\",\"tipo_institucion\":\"organismo_publico\"}', '127.0.0.1', '2026-11-09 20:30:39', '2026-11-09 20:30:39'),
-(40, 2, 'actualizar', 'instituciones', 3, '{\"campos_modificados\":[\"nombre\"],\"nombre\":\"Instituci\\u00f3n de prueba Administraci\\u00f3n actualizada\",\"tipo_institucion\":\"organismo_publico\"}', '127.0.0.1', '2026-11-09 20:30:58', '2026-11-09 20:30:58'),
-(41, 2, 'crear', 'personas', 3, '{\"nombre\":\"Persona\",\"apellido\":\"Prueba\"}', '127.0.0.1', '2026-11-09 21:16:04', '2026-11-09 21:16:04'),
-(42, 2, 'crear', 'personas', 4, '{\"nombre\":\"Persona\",\"apellido\":\"Prueba\"}', '127.0.0.1', '2026-11-09 21:19:00', '2026-11-09 21:19:00'),
-(43, 3, 'crear', 'partes', 5, '{\"id_instrumento\":4,\"id_institucion\":3,\"caracter_parte\":\"Instituci\\u00f3n asociada\"}', '127.0.0.1', '2026-11-09 21:29:26', '2026-11-09 21:29:26'),
-(44, 3, 'actualizar', 'partes', 5, '{\"campos_modificados\":[\"caracter_parte\"],\"id_instrumento\":4,\"id_institucion\":3}', '127.0.0.1', '2026-11-09 21:33:58', '2026-11-09 21:33:58'),
-(45, 3, 'actualizar', 'instrumentos_relaciones', 6, '{\"campos_modificados\":[\"descripcion\"],\"id_instrumento_origen\":2,\"id_instrumento_destino\":3,\"tipo_relacion\":\"modifica\"}', '127.0.0.1', '2026-11-09 21:43:31', '2026-11-09 21:43:31'),
-(46, 3, 'crear', 'instrumentos_relaciones', 7, '{\"id_instrumento_origen\":1,\"id_instrumento_destino\":3,\"tipo_relacion\":\"renueva\"}', '127.0.0.1', '2026-11-09 21:43:44', '2026-11-09 21:43:44'),
-(47, 3, 'actualizar', 'instrumentos_relaciones', 7, '{\"campos_modificados\":[\"descripcion\"],\"id_instrumento_origen\":1,\"id_instrumento_destino\":3,\"tipo_relacion\":\"renueva\"}', '127.0.0.1', '2026-11-09 21:44:47', '2026-11-09 21:44:47'),
-(48, 3, 'crear', 'participaciones_personas', 2, '{\"id_persona\":1,\"id_instrumento\":4,\"rol\":\"Investigador\"}', '127.0.0.1', '2026-11-13 07:07:50', '2026-11-13 07:07:50'),
-(49, 3, 'actualizar', 'participaciones_personas', 2, '{\"campos_modificados\":[\"rol\",\"descripcion\"],\"id_persona\":1,\"id_instrumento\":4,\"rol\":\"Investigador principal\"}', '127.0.0.1', '2026-11-13 07:13:33', '2026-11-13 07:13:33'),
-(50, 3, 'actualizar', 'participaciones_personas', 2, '{\"campos_modificados\":[\"rol\",\"descripcion\"],\"id_persona\":1,\"id_instrumento\":4,\"rol\":\"Investigador principal\"}', '127.0.0.1', '2026-11-13 07:13:36', '2026-11-13 07:13:36'),
-(51, 3, 'crear', 'pasantias', 3, '{\"id_instrumento\":1,\"id_persona_estudiante\":1,\"id_persona_tutor\":1,\"id_institucion_receptora\":2,\"carrera\":\"Ingenier\\u00eda en Sistemas\",\"estado\":\"planificada\"}', '127.0.0.1', '2026-11-13 08:15:12', '2026-11-13 08:15:12'),
-(52, 3, 'actualizar', 'pasantias', 3, '{\"campos_modificados\":[\"carrera\",\"horas_semanales\",\"actividades\",\"asignacion\",\"estado\"],\"id_instrumento\":1,\"id_persona_estudiante\":1,\"carrera\":\"Ingenier\\u00eda en Sistemas - UNLPam\",\"estado\":\"en_curso\"}', '127.0.0.1', '2026-11-13 08:15:48', '2026-11-13 08:15:48'),
-(53, 3, 'descargar', 'documentos', 10, '{\"id_instrumento\":3,\"nombre\":\"TP03 OCL_2026.docx (1).pdf\"}', '127.0.0.1', '2026-11-13 08:34:17', '2026-11-13 08:34:17'),
-(54, 3, 'crear_version', 'documentos', 11, '{\"id_instrumento\":3,\"id_documento_anterior\":10,\"nombre\":\"equivalencias.pdf\",\"tipo_documento\":\"anexo\",\"version_anterior\":3,\"version_nueva\":4}', '127.0.0.1', '2026-11-13 08:35:30', '2026-11-13 08:35:30'),
-(55, 4, 'crear', 'observaciones', 4, '{\"id_instrumento\":3,\"id_estado_instrumento\":2,\"estado\":\"pendiente\"}', '127.0.0.1', '2026-11-14 03:50:11', '2026-11-14 03:50:11'),
-(56, 3, 'responder', 'observaciones', 4, '{\"estado_anterior\":\"pendiente\",\"estado_nuevo\":\"respondida\"}', '127.0.0.1', '2026-11-14 03:51:52', '2026-11-14 03:51:52');
-
+(1, 3, 'crear', 'instrumentos', 1, '{"codigo":"ADENDA-2026-001","titulo":"Adenda para trazabilidad y calidad de datos académicos","estado_inicial":"borrador"}', '127.0.0.1', '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
+(2, 4, 'cambiar_estado', 'instrumentos', 1, '{"estado_anterior":"borrador","estado_nuevo":"revision","fundamento":"La adenda quedó completa y se remite a revisión administrativa."}', '127.0.0.1', '2026-11-18 10:01:00', '2026-11-18 10:01:00'),
+(3, 3, 'crear', 'instrumentos', 2, '{"codigo":"ESP-2026-002","titulo":"Convenio específico para intercambio de datos agronómicos","estado_inicial":"borrador"}', '127.0.0.1', '2026-11-18 10:05:00', '2026-11-18 10:05:00'),
+(4, 4, 'cambiar_estado', 'instrumentos', 2, '{"estado_anterior":"revision","estado_nuevo":"aprobado","fundamento":"Se verificó el plan de trabajo y el resguardo de datos."}', '127.0.0.1', '2026-11-18 10:07:00', '2026-11-18 10:07:00'),
+(5, 3, 'crear', 'instrumentos', 3, '{"codigo":"PAS-2026-003","titulo":"Convenio de pasantía en pruebas y documentación de software","estado_inicial":"borrador"}', '127.0.0.1', '2026-11-18 10:10:00', '2026-11-18 10:10:00'),
+(6, 3, 'crear', 'instrumentos', 4, '{"codigo":"MARCO-2026-004","titulo":"Convenio marco de cooperación en desarrollo de software académico","estado_inicial":"borrador"}', '127.0.0.1', '2026-11-18 10:15:00', '2026-11-18 10:15:00'),
+(7, 4, 'cambiar_estado', 'instrumentos', 4, '{"estado_anterior":"revision","estado_nuevo":"aprobado","fundamento":"El convenio marco fue revisado y aprobado para firma."}', '127.0.0.1', '2026-11-18 10:17:00', '2026-11-18 10:17:00'),
+(8, 4, 'cambiar_estado', 'instrumentos', 4, '{"estado_anterior":"aprobado","estado_nuevo":"firmado","fundamento":"Las partes suscribieron el convenio marco."}', '127.0.0.1', '2026-11-18 10:18:00', '2026-11-18 10:18:00');
 -- --------------------------------------------------------
 
 --
@@ -227,15 +178,12 @@ CREATE TABLE `historial_estados` (
 --
 
 INSERT INTO `historial_estados` (`id_historial_estado`, `id_instrumento`, `id_estado_anterior`, `id_estado_nuevo`, `id_usuario`, `fundamento`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 2, 2, 'El instrumento fue revisado y se encuentra listo para su evaluación.', '2026-11-06 20:41:00', '2026-11-06 20:41:00'),
-(2, 1, 2, 1, 2, 'Se devuelve el instrumento para realizar correcciones.', '2026-11-06 20:46:11', '2026-11-06 20:46:11'),
-(3, 3, 1, 2, 2, 'Se envía a revisión para probar el registro de auditoría.', '2026-11-08 19:56:45', '2026-11-08 19:56:45'),
-(4, 4, 1, 2, 3, 'Envío del instrumento para revisión.', '2026-11-09 18:34:19', '2026-11-09 18:34:19'),
-(5, 4, 2, 3, 4, 'Instrumento revisado y aprobado.', '2026-11-09 19:13:28', '2026-11-09 19:13:28'),
-(6, 4, 2, 3, 4, 'Instrumento revisado. Cuenta con las dos partes firmantes requeridas.', '2026-11-09 19:24:13', '2026-11-09 19:24:13'),
-(7, 4, 2, 1, 4, 'Se devuelve el instrumento a Gestión para corregir observaciones.', '2026-11-09 19:25:22', '2026-11-09 19:25:22'),
-(8, 4, 1, 2, 3, 'Se corrigieron las observaciones y se reenvía el instrumento para revisión.', '2026-11-09 19:27:21', '2026-11-09 19:27:21'),
-(9, 4, 2, 3, 4, 'Se verificaron las correcciones y se aprueba el instrumento.', '2026-11-09 19:28:16', '2026-11-09 19:28:16');
+(1, 1, 1, 2, 3, 'La adenda quedó completa y se remite a revisión administrativa.', '2026-11-18 10:01:00', '2026-11-18 10:01:00'),
+(2, 2, 1, 2, 3, 'El convenio específico se envía a revisión administrativa.', '2026-11-18 10:06:00', '2026-11-18 10:06:00'),
+(3, 2, 2, 3, 4, 'Se verificó el plan de trabajo, las obligaciones y las cláusulas de resguardo de datos; queda aprobado.', '2026-11-18 10:07:00', '2026-11-18 10:07:00'),
+(4, 4, 1, 2, 3, 'El convenio marco completo se remite a revisión administrativa.', '2026-11-18 10:16:00', '2026-11-18 10:16:00'),
+(5, 4, 2, 3, 4, 'El convenio marco fue revisado y aprobado para firma.', '2026-11-18 10:17:00', '2026-11-18 10:17:00'),
+(6, 4, 3, 4, 4, 'Las partes suscribieron el convenio marco.', '2026-11-18 10:18:00', '2026-11-18 10:18:00');
 
 -- --------------------------------------------------------
 
@@ -305,11 +253,10 @@ CREATE TABLE `instrumentos` (
 --
 
 INSERT INTO `instrumentos` (`id_instrumento`, `codigo`, `titulo`, `id_tipo_instrumento`, `id_unidad`, `id_estado`, `objeto`, `alcance`, `obligaciones`, `rescision`, `marco_legal`, `resolucion`, `expediente_referencia`, `condiciones_renovacion`, `confidencialidad`, `notas`, `fecha_firma`, `fecha_inicio`, `fecha_vencimiento`, `plazo_preaviso`, `version`, `id_usuario_creador`, `created_at`, `updated_at`) VALUES
-(1, 'CONV-TEST-001', 'Convenio de cooperación académica actualizado', 1, 1, 1, 'Establecer vínculos de cooperación entre instituciones.', 'Actividades de investigación y formación.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 30, 1, 2, '2026-11-06 20:26:03', '2026-11-06 20:46:11'),
-(2, 'CONV-TEST-002', 'Convenio específico de investigación', 1, 1, 1, 'Desarrollar actividades conjuntas de investigación.', 'Cooperación académica.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 30, 1, 2, '2026-11-08 10:23:30', '2026-11-08 10:23:30'),
-(3, 'CONV-AUDIT-001', 'Convenio de prueba para auditorías actualizado', 1, 1, 2, 'Prueba del registro automático de auditorías.', 'Actividades académicas.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Se modificó para comprobar el registro de auditoría.', NULL, NULL, NULL, 30, 1, 2, '2026-11-08 19:55:57', '2026-11-08 19:56:45'),
-(4, 'CONV-GEST-001', 'Convenio de cooperación académica corregido', 1, 1, 3, 'Establecer vínculos de cooperación entre instituciones, incluyendo actividades académicas y de investigación.', 'Actividades de investigación, formación y cooperación académica.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 30, 1, 3, '2026-11-09 18:21:05', '2026-11-09 19:28:16'),
-(5, 'CONV-UNI2-001', 'Convenio de prueba - Facultad de Ingeniería', 1, 2, 1, 'Instrumento de prueba para aislamiento entre unidades.', 'Facultad de Ingeniería', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 30, 1, 6, '2026-11-09 19:38:20', '2026-11-09 19:38:20');
+(1, 'ADENDA-2026-001', 'Adenda para trazabilidad y calidad de datos académicos', 4, 6, 2, 'Actualizar el protocolo de intercambio de datos para incorporar controles de trazabilidad y validación de registros.', 'Equipos académicos y técnicos de la Facultad de Ciencias Exactas y Naturales y Administración Central.', 'Las partes documentarán cambios, validarán integridad antes de cada intercambio y designarán referentes técnicos.', 'Cualquiera de las partes podrá rescindir con aviso escrito de 30 días; se completarán las tareas críticas ya iniciadas.', 'Ley 24.521 de Educación Superior, normativa institucional de protección de datos y convenio marco vigente entre las partes.', 'Resolución Rectoral 184/2026', 'EXP-UNLPam-2026-00481', 'Vigencia de la adenda condicionada a la vigencia del convenio base; revisión anual por acuerdo escrito.', 'Los datos personales y académicos se usarán solo para los fines acordados y con acceso limitado a los equipos autorizados.', 'Temática inspirada en modelado, consistencia y trazabilidad de datos del TP integrador. Adenda demostrativa para el proyecto.', NULL, '2026-11-18', '2027-11-18', 30, 1, 3, '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
+(2, 'ESP-2026-002', 'Convenio específico para intercambio de datos agronómicos', 2, 3, 3, 'Desarrollar un prototipo para integrar datos de ensayos de cultivos y generar indicadores comparables de rendimiento.', 'Facultad de Agronomía y Administración Central; incluye diseño de esquema, carga controlada y reportes de resultados.', 'La Facultad definirá el diccionario de datos y validará resultados; Administración Central brindará soporte de infraestructura y resguardo.', 'Rescisión con preaviso de 45 días, preservando respaldos y entregables producidos hasta la fecha.', 'Ley 24.521, reglamentos de investigación de la UNLPam y convenio marco institucional de cooperación académica.', 'Resolución Consejo Directivo 092/2026', 'EXP-UNLPam-2026-00512', 'Plazo inicial de 24 meses, prorrogable por acuerdo escrito luego de evaluar resultados y recursos.', 'Los datos de ensayos se publicarán de forma agregada; las bases sin anonimizar no podrán compartirse fuera de los equipos autorizados.', 'Convenio específico demostrativo vinculado con la organización y análisis de datos experimentales.', NULL, '2026-11-18', '2028-11-18', 45, 1, 3, '2026-11-18 10:05:00', '2026-11-18 10:05:00'),
+(3, 'PAS-2026-003', 'Convenio de pasantía en pruebas y documentación de software', 3, 2, 1, 'Establecer una pasantía formativa para participar en el aseguramiento de calidad de un sistema de gestión académica.', 'Pasantía de estudiante de Ingeniería en Sistemas en la Facultad de Ingeniería, con tutoría académica y supervisión institucional.', 'La pasante cumplirá el plan formativo y resguardará credenciales; la institución receptora brindará tutor, equipo y seguimiento semanal.', 'Cualquiera de las partes podrá solicitar la finalización anticipada con notificación escrita y cierre de actividades en curso.', 'Ley 26.427 de pasantías educativas, Ley 24.521 y reglamento de pasantías de la UNLPam.', 'Acta de aprobación de plan formativo 2026-117', 'EXP-UNLPam-2026-00539', 'Duración de seis meses; cualquier prórroga requerirá evaluación del tutor y acuerdo escrito previo.', 'El acceso a entornos y datos será limitado al necesario para pruebas; queda prohibida la divulgación de información institucional.', 'Pasantía demostrativa orientada a pruebas funcionales, documentación y mejora incremental de software.', NULL, '2026-11-18', '2027-05-18', 30, 1, 3, '2026-11-18 10:10:00', '2026-11-18 10:10:00'),
+(4, 'MARCO-2026-004', 'Convenio marco de cooperación en desarrollo de software académico', 1, 1, 4, 'Establecer un marco de cooperación para diseñar, implementar y mantener soluciones de software que apoyen procesos académicos.', 'Cooperación entre Administración Central y la Facultad de Ciencias Humanas en proyectos de sistemas, capacitación y transferencia de conocimiento.', 'Las partes designarán enlaces, acordarán planes de trabajo específicos, compartirán avances y evaluarán resultados al menos una vez por año.', 'Cualquiera de las partes podrá rescindir mediante notificación fehaciente con 60 días de anticipación, respetando actividades específicas vigentes.', 'Ley 24.521, Estatuto de la UNLPam y normativa institucional aplicable a convenios de cooperación.', 'Resolución Rectoral 201/2026', 'EXP-UNLPam-2026-00577', 'Vigencia de tres años, con renovación por períodos iguales mediante acuerdo escrito y evaluación de las actividades.', 'El material con datos personales o información institucional reservada tendrá acceso restringido y no podrá divulgarse sin autorización.', 'Convenio marco demostrativo para colaboración interdisciplinaria en análisis y desarrollo de sistemas académicos.', '2026-11-18', '2026-11-18', '2029-11-18', 60, 1, 3, '2026-11-18 10:15:00', '2026-11-18 10:15:00');
 
 -- --------------------------------------------------------
 
@@ -332,9 +279,7 @@ CREATE TABLE `instrumentos_relaciones` (
 --
 
 INSERT INTO `instrumentos_relaciones` (`id_instrumento_relacion`, `id_instrumento_origen`, `id_instrumento_destino`, `tipo_relacion`, `descripcion`, `created_at`, `updated_at`) VALUES
-(1, 1, 2, 'modifica', 'Adenda de prueba para modificar el convenio.', '2026-11-08 10:24:55', '2026-11-08 10:24:55'),
-(6, 2, 3, 'modifica', 'Relación actualizada por el usuario de Gestión.', '2026-11-08 22:57:04', '2026-11-09 21:43:31'),
-(7, 1, 3, 'renueva', 'Relación actualizada por el usuario de Gestión.', '2026-11-09 21:43:44', '2026-11-09 21:44:47');
+(1, 1, 2, 'modifica', 'La adenda actualiza el convenio específico de intercambio de datos agronómicos mediante nuevos controles de trazabilidad.', '2026-11-18 10:02:00', '2026-11-18 10:02:00');
 
 -- --------------------------------------------------------
 
@@ -438,10 +383,7 @@ CREATE TABLE `observaciones` (
 --
 
 INSERT INTO `observaciones` (`id_observacion`, `id_instrumento`, `id_usuario`, `id_estado_instrumento`, `contenido`, `estado`, `respuesta`, `id_usuario_respondio`, `respondida_en`, `id_usuario_resolvio`, `resuelta_en`, `created_at`, `updated_at`) VALUES
-(1, 1, 2, 1, 'Se solicita revisar las obligaciones establecidas en el convenio.', 'resuelta', 'Se revisaron las obligaciones y se realizaron las correcciones correspondientes.', 2, '2026-11-08 16:32:20', 2, '2026-11-08 16:32:34', '2026-11-08 19:32:05', '2026-11-08 19:32:34'),
-(2, 1, 2, 1, 'Se solicita revisar la documentación del convenio.', 'resuelta', 'Se revisó la documentación y se realizaron las correcciones correspondientes.', 2, '2026-11-09 01:39:23', 2, '2026-11-09 01:40:09', '2026-11-09 04:38:59', '2026-11-09 04:40:09'),
-(3, 3, 2, 2, 'Se solicita revisar la documentación adjunta.', 'resuelta', 'La documentación fue revisada correctamente. No se requieren modificaciones.', 2, '2026-11-09 04:13:16', 2, '2026-11-09 04:13:46', '2026-11-09 07:11:51', '2026-11-09 07:13:46'),
-(4, 3, 4, 2, 'Se solicita corregir la documentación adjunta al convenio.', 'respondida', 'Se corrigió la documentación y se adjuntó la versión actualizada del convenio.', 3, '2026-11-14 00:51:52', NULL, NULL, '2026-11-14 03:50:11', '2026-11-14 03:51:52');
+(1, 1, 4, 2, 'Confirmar que los controles de trazabilidad se aplicarán también a los archivos históricos incluidos en los intercambios.', 'pendiente', NULL, NULL, NULL, NULL, NULL, '2026-11-18 10:03:00', '2026-11-18 10:03:00');
 
 -- --------------------------------------------------------
 
@@ -466,11 +408,14 @@ CREATE TABLE `partes` (
 --
 
 INSERT INTO `partes` (`id_parte`, `id_instrumento`, `id_institucion`, `caracter_parte`, `id_persona_representante`, `representante_cargo`, `firmado_en`, `created_at`, `updated_at`) VALUES
-(1, 1, 2, 'Parte firmante principal', 1, 'Rector', '2026-11-08', '2026-11-08 10:21:22', '2026-11-08 10:22:15'),
-(2, 2, 1, 'Parte firmante actualizada', 1, 'Director institucional', '2026-11-08', '2026-11-08 21:04:07', '2026-11-08 21:35:01'),
-(3, 4, 1, 'Parte firmante principal', 1, 'Director institucional', NULL, '2026-11-09 19:17:54', '2026-11-09 19:17:54'),
-(4, 4, 2, 'Parte firmante secundaria', 1, 'Rector', NULL, '2026-11-09 19:18:17', '2026-11-09 19:18:17'),
-(5, 4, 3, 'Institución participante actualizada', NULL, NULL, NULL, '2026-11-09 21:29:26', '2026-11-09 21:33:58');
+(1, 1, 1, 'Parte firmante principal', 1, 'Secretario de Ciencia y Técnica', NULL, '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
+(2, 1, 2, 'Parte firmante académica', 1, 'Decano/a', NULL, '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
+(3, 2, 1, 'Parte firmante institucional', 1, 'Secretario de Ciencia y Técnica', NULL, '2026-11-18 10:05:00', '2026-11-18 10:05:00'),
+(4, 2, 2, 'Parte firmante académica', 1, 'Decano/a', NULL, '2026-11-18 10:05:00', '2026-11-18 10:05:00'),
+(5, 3, 1, 'Parte firmante institucional', 1, 'Secretario de Coordinación y Planeamiento', NULL, '2026-11-18 10:10:00', '2026-11-18 10:10:00'),
+(6, 3, 2, 'Institución receptora', 1, 'Decano/a', NULL, '2026-11-18 10:10:00', '2026-11-18 10:10:00'),
+(7, 4, 1, 'Parte firmante institucional', 1, 'Rector/a', '2026-11-18', '2026-11-18 10:15:00', '2026-11-18 10:18:00'),
+(8, 4, 2, 'Parte firmante académica', 1, 'Decano/a', '2026-11-18', '2026-11-18 10:15:00', '2026-11-18 10:18:00');
 
 -- --------------------------------------------------------
 
@@ -495,8 +440,10 @@ CREATE TABLE `participaciones_personas` (
 --
 
 INSERT INTO `participaciones_personas` (`id_participacion_persona`, `id_persona`, `id_instrumento`, `rol`, `fecha_inicio`, `fecha_fin`, `descripcion`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 'Responsable actualizado', '2026-11-08', NULL, 'Participación modificada para comprobar la auditoría.', '2026-11-08 18:42:22', '2026-11-09 00:22:02'),
-(2, 1, 4, 'Investigador principal', '2026-11-13', '2027-11-13', 'Participación actualizada por Gestión.', '2026-11-13 07:07:50', '2026-11-13 07:13:33');
+(1, 1, 1, 'Referente técnico de datos', '2026-11-18', '2027-11-18', 'Coordina validaciones, control de cambios y trazabilidad de intercambios.', '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
+(2, 1, 2, 'Responsable de investigación', '2026-11-18', '2028-11-18', 'Define indicadores y valida los resultados de los ensayos agronómicos.', '2026-11-18 10:05:00', '2026-11-18 10:05:00'),
+(3, 1, 3, 'Pasante de desarrollo y QA', '2026-11-18', '2027-05-18', 'Participa en pruebas funcionales y documentación del sistema.', '2026-11-18 10:10:00', '2026-11-18 10:10:00'),
+(4, 1, 4, 'Enlace académico', '2026-11-18', '2029-11-18', 'Coordina propuestas interdisciplinarias de software académico.', '2026-11-18 10:15:00', '2026-11-18 10:15:00');
 
 -- --------------------------------------------------------
 
@@ -528,9 +475,7 @@ CREATE TABLE `pasantias` (
 --
 
 INSERT INTO `pasantias` (`id_pasantia`, `id_instrumento`, `id_persona_estudiante`, `id_persona_tutor`, `id_institucion_receptora`, `id_persona_responsable_receptor`, `carrera`, `fecha_inicio`, `fecha_fin`, `horas_semanales`, `actividades`, `asignacion`, `seguro`, `estado`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 1, 2, 1, 'Ingeniería en Sistemas', '2026-11-10', '2027-02-10', 25, 'Desarrollo, pruebas y mantenimiento de sistemas informáticos.', 'Sin asignación económica', 'Seguro de accidentes personales', 'en_curso', '2026-11-08 18:46:25', '2026-11-08 18:47:51'),
-(2, 1, 1, 1, 2, 1, 'Ingeniería en Sistemas actualizada', '2027-03-01', '2027-07-01', 20, 'Actividades de desarrollo y análisis de sistemas.', 'Asignación de prueba', 'Seguro de prueba', 'en_curso', '2026-11-09 01:12:52', '2026-11-09 01:13:19'),
-(3, 1, 1, 1, 2, 1, 'Ingeniería en Sistemas - UNLPam', '2027-04-01', '2027-07-01', 15, 'Desarrollo de software, pruebas y documentación técnica.', 'Asignación económica mensual', 'Seguro de accidentes personales', 'en_curso', '2026-11-13 08:15:12', '2026-11-13 08:15:48');
+(1, 3, 1, 1, 2, 1, 'Ingeniería en Sistemas', '2026-12-01', '2027-05-31', 20, 'Diseño de casos de prueba, ejecución de pruebas funcionales, registro de incidencias y elaboración de documentación técnica.', 'Asignación estímulo mensual según normativa vigente', 'Cobertura de accidentes personales contratada por la institución receptora', 'planificada', '2026-11-18 10:10:00', '2026-11-18 10:10:00');
 
 -- --------------------------------------------------------
 
@@ -653,8 +598,14 @@ CREATE TABLE `unidades` (
 --
 
 INSERT INTO `unidades` (`id_unidad`, `nombre`, `tipo_unidad`, `descripcion`, `id_unidad_padre`, `created_at`, `updated_at`) VALUES
-(1, 'Administración Central', 'administrativa', 'Unidad administrativa de prueba', NULL, '2026-11-06 20:21:01', '2026-11-06 20:21:01'),
-(2, 'Facultad de Ingeniería', 'Académica', 'Unidad de prueba para verificar el aislamiento de datos', NULL, '2026-11-09 16:36:13', '2026-11-09 16:36:13');
+(1, 'Administración Central', 'administrativa', 'Unidad administrativa central de la UNLPam.', NULL, '2026-11-06 20:21:01', '2026-11-18 10:00:00'),
+(2, 'Facultad de Ingeniería', 'académica', 'Unidad académica de General Pico.', NULL, '2026-11-09 16:36:13', '2026-11-18 10:00:00'),
+(3, 'Facultad de Agronomía', 'académica', 'Unidad académica con sede en Santa Rosa.', NULL, '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
+(4, 'Facultad de Ciencias de la Salud', 'académica', 'Unidad académica con sede en General Pico.', NULL, '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
+(5, 'Facultad de Ciencias Económicas y Jurídicas', 'académica', 'Unidad académica con sede en Santa Rosa.', NULL, '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
+(6, 'Facultad de Ciencias Exactas y Naturales', 'académica', 'Unidad académica con sede en Santa Rosa.', NULL, '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
+(7, 'Facultad de Ciencias Humanas', 'académica', 'Unidad académica con sede en Santa Rosa.', NULL, '2026-11-18 10:00:00', '2026-11-18 10:00:00'),
+(8, 'Facultad de Ciencias Veterinarias', 'académica', 'Unidad académica de General Pico.', NULL, '2026-11-18 10:00:00', '2026-11-18 10:00:00');
 
 -- --------------------------------------------------------
 
@@ -921,7 +872,7 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `auditorias`
 --
 ALTER TABLE `auditorias`
-  MODIFY `id_auditoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `id_auditoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `documentos`
@@ -945,7 +896,7 @@ ALTER TABLE `failed_jobs`
 -- AUTO_INCREMENT de la tabla `historial_estados`
 --
 ALTER TABLE `historial_estados`
-  MODIFY `id_historial_estado` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id_historial_estado` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `instituciones`
@@ -957,7 +908,7 @@ ALTER TABLE `instituciones`
 -- AUTO_INCREMENT de la tabla `instrumentos`
 --
 ALTER TABLE `instrumentos`
-  MODIFY `id_instrumento` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_instrumento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `instrumentos_relaciones`
@@ -1029,7 +980,7 @@ ALTER TABLE `tipos_instrumento`
 -- AUTO_INCREMENT de la tabla `unidades`
 --
 ALTER TABLE `unidades`
-  MODIFY `id_unidad` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_unidad` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `users`
