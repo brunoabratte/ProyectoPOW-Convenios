@@ -465,9 +465,27 @@ function actualizarSeccionPasantias() {
                 </ul>
             </div>
         </div>
-        ${datos.data.estado?.nombre === "borrador" ? `
+        ${normalizar(String(datos.data.estado?.nombre ?? "")) === "borrador" ? `
             <button type="button" class="btn btn-primary mt-3" id="enviar-revision">
                 Enviar a revisión
+            </button>
+        ` : ""}
+
+        ${datos.data.estado?.nombre === "aprobado" ? `
+            <button type="button" class="btn btn-success mt-3" id="marcar-firmado">
+                Marcar como firmado
+            </button>
+        ` : ""}
+
+        ${datos.data.estado?.nombre === "firmado" ? `
+            <button type="button" class="btn btn-danger mt-3" id="marcar-rescindido">
+                Rescindir convenio
+            </button>
+        ` : ""}
+
+        ${datos.data.estado?.nombre === "rescindido" ? `
+            <button type="button" class="btn btn-secondary mt-3" id="marcar-archivado">
+                Archivar convenio
             </button>
         ` : ""}
 
@@ -477,6 +495,8 @@ function actualizarSeccionPasantias() {
         
         `;
         
+        
+
         modal.querySelector("#cerrar-detalles")?.addEventListener("click", cerrarDetalles);
         modal.querySelector("#enviar-revision")?.addEventListener("click", async () => {
         let fundamento = prompt("Ingresá el fundamento del envío a revisión:");
@@ -500,6 +520,91 @@ function actualizarSeccionPasantias() {
         cerrarDetalles();
         listarConvenios(1);
     });
+
+        
+    modal.querySelector("#marcar-firmado")?.addEventListener("click", async () => {
+        let fundamento = prompt("Ingresá el fundamento de la firma:");
+
+        if (fundamento == null || fundamento.trim() === "") {
+            alert("Tenés que ingresar un fundamento.");
+            return;
+        }
+
+        let fechaFirma = prompt("Ingresá la fecha de firma (AAAA-MM-DD):");
+
+        if (fechaFirma == null || fechaFirma.trim() === "") {
+            alert("Tenés que ingresar una fecha de firma.");
+            return;
+        }
+
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaFirma)) {
+            alert("La fecha debe tener el formato AAAA-MM-DD.");
+            return;
+        }
+
+        let respuesta = await cambiarEstado(id, {
+            id_estado_nuevo: 4,
+            fundamento: fundamento.trim(),
+            fecha_firma: fechaFirma.trim()
+        });
+
+        if (respuesta.data == null) {
+            alert(respuesta.mensaje ?? respuesta.message ?? "No se pudo cambiar el estado.");
+            return;
+        }
+
+        alert("El convenio fue marcado como firmado correctamente.");
+        cerrarDetalles();
+        listarConvenios(1);
+    });
+
+
+        modal.querySelector("#marcar-rescindido")?.addEventListener("click", async () => {
+            let fundamento = prompt("Ingresá el fundamento de la rescisión:");
+
+            if (fundamento == null || fundamento.trim() === "") {
+                alert("Tenés que ingresar un fundamento.");
+                return;
+            }
+
+            let respuesta = await cambiarEstado(id, {
+                id_estado_nuevo: 5,
+                fundamento: fundamento.trim()
+            });
+
+            if (respuesta.data == null) {
+                alert(respuesta.mensaje ?? respuesta.message ?? "No se pudo rescindir el convenio.");
+                return;
+            }
+
+            alert("El convenio fue rescindido correctamente.");
+            cerrarDetalles();
+            listarConvenios(1);
+        });
+
+        modal.querySelector("#marcar-archivado")?.addEventListener("click", async () => {
+            let fundamento = prompt("Ingresá el fundamento del archivo:");
+
+            if (fundamento == null || fundamento.trim() === "") {
+                alert("Tenés que ingresar un fundamento.");
+                return;
+            }
+
+            let respuesta = await cambiarEstado(id, {
+                id_estado_nuevo: 6,
+                fundamento: fundamento.trim()
+            });
+
+            if (respuesta.data == null) {
+                alert(respuesta.mensaje ?? respuesta.message ?? "No se pudo archivar el convenio.");
+                return;
+            }
+
+            alert("El convenio fue archivado correctamente.");
+            cerrarDetalles();
+            listarConvenios(1);
+        });
+
         modal.showModal();
     }
 

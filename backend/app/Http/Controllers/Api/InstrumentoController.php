@@ -378,15 +378,23 @@ class InstrumentoController extends Controller
             }
 
             // APROBADO -> FIRMADO: requiere Gestión o Admin y fecha de firma.
-            elseif (
+            $fechaFirma = null;
+
+            if (
                 $estadoActual === 'aprobado' &&
                 $nombreEstadoNuevo === 'firmado'
             ) {
-                if (!$usuario->esAdmin() && !$usuario->esGestion() && !$usuario->esAdministracion()) {
-                    abort(403, 'Solo Gestión o Administración puede registrar la firma.');
+                if (
+                    !$usuario->esAdmin() &&
+                    !$usuario->esGestion() &&
+                    !$usuario->esAdministracion()
+                ) {
+                    abort(403, 'Solo Gestión puede marcar instrumentos como firmados.');
                 }
 
-                if (empty($datos['fecha_firma'])) {
+                $fechaFirma = $datos['fecha_firma'] ?? $instrumento->fecha_firma;
+
+                if (empty($fechaFirma)) {
                     throw ValidationException::withMessages([
                         'fecha_firma' => [
                             'La fecha de firma es obligatoria para pasar a firmado.'
@@ -430,7 +438,7 @@ class InstrumentoController extends Controller
                 $estadoActual === 'aprobado' &&
                 $nombreEstadoNuevo === 'firmado'
             ) {
-                $actualizacion['fecha_firma'] = $datos['fecha_firma'];
+                $actualizacion['fecha_firma'] = $fechaFirma;
             }
 
             $instrumento->update($actualizacion);

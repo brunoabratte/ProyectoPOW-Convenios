@@ -630,3 +630,18 @@ button, input, select, textarea {
     font-size: 12px;
     margin: 0;
 } 
+
+.contadorAlertas {
+    margin-left: auto;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50px;
+    background-color: #facc15;
+    color: #26384a;
+    font-size: 12px;
+    font-weight: bold;
+}
