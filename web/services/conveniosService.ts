@@ -102,6 +102,22 @@ export async function crearObservacion(datos : FormData){
     return await res.json();
 }
 
+export async function responderObservacion(id: string, respuesta: string) {
+    let token = localStorage.getItem("token");
+
+    let res = await fetch(url + `observaciones/${id}/responder`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ respuesta })
+    });
+
+    return await res.json();
+}
+
 export async function resolverObservacion(id : string){
     let token = localStorage.getItem("token");
 

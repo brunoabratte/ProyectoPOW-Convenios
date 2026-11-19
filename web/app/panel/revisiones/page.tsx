@@ -6,6 +6,7 @@ import {
     obtenerConvenioEspecifico,
     obtenerObservaciones,
     crearObservacion,
+    responderObservacion,
     resolverObservacion,
     cambiarEstado,
     descargarDocumento
@@ -182,8 +183,12 @@ export default function RevisionesPage(){
                 </div>
                 <p class="mb-1">${escapar(o.contenido)}</p>
                 ${o.respuesta ? `<p class="mb-1"><em>Respuesta del equipo gestor:</em> ${escapar(o.respuesta)}</p>` : ""}
+                ${o.estado === "pendiente"
+                    ? `<button type="button" class="btn btn-sm btn-primary btn-responder mt-2" data-id="${o.id_observacion}">Responder</button>`
+                    : ""}
+
                 ${o.estado === "respondida"
-                    ? `<button type="button" class="btn btn-sm btn-success btn-resolver" data-id="${o.id_observacion}">Marcar como resuelta</button>`
+                    ? `<button type="button" class="btn btn-sm btn-success btn-resolver mt-2" data-id="${o.id_observacion}">Marcar como resuelta</button>`
                     : ""}
             </div>
             `;
@@ -264,6 +269,32 @@ export default function RevisionesPage(){
         });
 
         // Resolver observaciones respondidas
+        modal.querySelectorAll(".btn-responder").forEach((boton) => {
+            boton.addEventListener("click", async () => {
+                let idObservacion = boton.getAttribute("data-id");
+
+                if (idObservacion == null)
+                    return;
+
+                let respuestaTexto = prompt("Escribí la respuesta a esta observación:");
+
+                if (respuestaTexto == null || respuestaTexto.trim() === "")
+                    return;
+
+                let respuesta = await responderObservacion(
+                    idObservacion,
+                    respuestaTexto.trim()
+                );
+
+                if (respuesta.observacion == null) {
+                    alert(mensajeError(respuesta));
+                    return;
+                }
+
+                alert("Observación respondida correctamente.");
+                abrirRevision(id);
+            });
+        });
         modal.querySelectorAll(".btn-resolver").forEach((boton) => {
             boton.addEventListener("click", async () => {
                 let idObservacion = boton.getAttribute("data-id");
