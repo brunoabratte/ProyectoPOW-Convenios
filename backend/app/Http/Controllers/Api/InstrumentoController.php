@@ -350,7 +350,7 @@ class InstrumentoController extends Controller
                 $estadoActual === 'borrador' &&
                 $nombreEstadoNuevo === 'revision'
             ) {
-                if (!$usuario->esAdmin() && !$usuario->esGestion()) {
+                if (!$usuario->esAdmin() && !$usuario->esGestion() && !$usuario->esAdministracion()) {
                     abort(403, 'Solo Gestión puede enviar instrumentos a revisión.');
                 }
             }
@@ -360,7 +360,7 @@ class InstrumentoController extends Controller
                 $estadoActual === 'revision' &&
                 in_array($nombreEstadoNuevo, ['borrador', 'aprobado'])
             ) {
-                if (!$usuario->esAdmin() && !$usuario->esRevision()) {
+                if (!$usuario->esAdmin() && !$usuario->esRevision() && !$usuario->esAdministracion()) {
                     abort(403, 'Solo Revisión puede aprobar o devolver instrumentos.');
                 }
 
@@ -382,8 +382,8 @@ class InstrumentoController extends Controller
                 $estadoActual === 'aprobado' &&
                 $nombreEstadoNuevo === 'firmado'
             ) {
-                if (!$usuario->esAdmin() && !$usuario->esGestion()) {
-                    abort(403, 'Solo Gestión puede registrar la firma.');
+                if (!$usuario->esAdmin() && !$usuario->esGestion() && !$usuario->esAdministracion()) {
+                    abort(403, 'Solo Gestión o Administración puede registrar la firma.');
                 }
 
                 if (empty($datos['fecha_firma'])) {

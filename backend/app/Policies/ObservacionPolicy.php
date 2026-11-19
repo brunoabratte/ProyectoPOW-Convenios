@@ -31,7 +31,9 @@ class ObservacionPolicy
     // Revisión puede crear observaciones.
     public function create(User $user): bool
     {
-        return $user->esAdmin() || $user->esRevision();
+        return $user->esAdmin()
+            || $user->esRevision()
+            || $user->esAdministracion();
     }
 
     // Gestión puede responder observaciones de su alcance.
@@ -41,6 +43,7 @@ class ObservacionPolicy
             || (
                 $user->esGestion()
                 && $user->puedeAccederAInstrumento($observacion->instrumento)
+                || $user->esAdministracion()   
             );
     }
 
@@ -51,6 +54,7 @@ class ObservacionPolicy
             || (
                 $user->esRevision()
                 && $user->puedeAccederAInstrumento($observacion->instrumento)
+                || $user->esAdministracion()    
             );
     }
 }
