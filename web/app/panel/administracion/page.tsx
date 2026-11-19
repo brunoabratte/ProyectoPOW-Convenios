@@ -113,10 +113,49 @@ export default function AdministracionPage(){
         for (let i = 0; i < datos.data.length; i++) {
             let a = datos.data[i];
 
-            let detalle = JSON.stringify(a.detalle ?? {}, null, 2);
-            let htmlDetalle = (detalle === "{}" || detalle === "[]")
-                ? "-"
-                : `<details><summary>Ver</summary><pre class="mb-0">${escapar(detalle)}</pre></details>`;
+            let detalle = a.detalle ?? {};
+            let htmlDetalle = "-";
+
+            if (Object.keys(detalle).length > 0) {
+                let contenidoDetalle = "";
+
+                if (a.accion === "cambiar_estado") {
+                    contenidoDetalle = `
+                        <p><strong>Estado anterior:</strong> ${escapar(detalle.estado_anterior)}</p>
+                        <p><strong>Estado nuevo:</strong> ${escapar(detalle.estado_nuevo)}</p>
+                        <p><strong>Fundamento:</strong> ${escapar(detalle.fundamento)}</p>
+                        <p><strong>Versión nueva:</strong> ${escapar(detalle.version_nueva)}</p>
+                    `;
+                } else {
+                    let etiquetas: any = {
+                        id_instrumento: "Instrumento",
+                        id_documento_anterior: "Documento anterior",
+                        nombre: "Nombre",
+                        titulo: "Título",
+                        codigo: "Código",
+                        estado_inicial: "Estado inicial",
+                        tipo_documento: "Tipo de documento",
+                        tipo_institucion: "Tipo de institución",
+                        campos_modificados: "Campos modificados",
+                        version: "Versión",
+                        version_anterior: "Versión anterior",
+                        version_nueva: "Versión nueva"
+                    };
+
+                    contenidoDetalle = Object.entries(detalle).map(([clave, valor]) => {
+                        let etiqueta = etiquetas[clave] ?? clave.replace(/_/g, " ");
+                        let texto = Array.isArray(valor)
+                            ? valor.join(", ")
+                            : typeof valor === "object" && valor !== null
+                                ? JSON.stringify(valor)
+                                : String(valor ?? "-");
+
+                        return `<p><strong>${escapar(etiqueta)}:</strong> ${escapar(texto)}</p>`;
+                    }).join("");
+                }
+
+                htmlDetalle = `<details><summary>Ver</summary><div class="detalleAuditoria mt-2">${contenidoDetalle}</div></details>`;
+            }
 
             filas += `
             <tr>

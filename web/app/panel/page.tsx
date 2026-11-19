@@ -185,7 +185,7 @@ const [error, setError] = useState("");
         try {
             let datos = await obtenerConvenios();
 
-            if (datos.status != 200) {
+            if (datos.status !== 200) {
                 setError("No se pudieron obtener los convenios.");
                 return;
             }
