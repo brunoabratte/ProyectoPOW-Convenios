@@ -230,3 +230,33 @@ export async function obtenerUnidades(){
 
     return await respuesta.json();
 }
+
+export async function registrarParticipacion(datos: FormData) {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(url + "participaciones-personas", {
+        method: "POST",
+        headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body: datos
+    });
+
+    return await res.json();
+}
+
+export async function registrarPasantia(datos: FormData) {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(url + "pasantias", {
+        method: "POST",
+        headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body: datos
+    });
+
+    return await res.json();
+}

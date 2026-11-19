@@ -1,9 +1,19 @@
 "use client";
 
-import { obtenerConvenioEspecifico, obtenerConvenios, obtenerTiposInstrumento, obtenerUnidades, registrar, registrarParte, subirDocumento } from "@/services/conveniosService";
+import {
+    obtenerConvenioEspecifico,
+    obtenerConvenios,
+    obtenerTiposInstrumento,
+    obtenerUnidades,
+    registrar,
+    registrarParte,
+    registrarParticipacion,
+    registrarPasantia,
+    registrarRelacion,
+    subirDocumento
+} from "@/services/conveniosService";
 import { verificarSesion } from "@/services/authService";
 import { useEffect } from "react";
-import { registrarRelacion } from "@/services/conveniosService";
 import { obtenerPersonas } from "@/services/personasService";
 import { obtenerInstituciones } from "@/services/institucionesService";
 
@@ -101,22 +111,119 @@ async function agregarParteFirmante() {
     contenedor.appendChild(fila);
 }
 
-    async function listarPersonas(){
-        let personas = document.getElementById("personas") as HTMLSelectElement | null;
+    let listaPersonas: any[] = [];
 
-        if (personas == null)
-            return;
-
-        personas.innerHTML = `<option value="">Seleccione una persona</option>`;
-
-        let datosPersonas = await obtenerPersonas();
-
-        for (let i = 0; i < datosPersonas.datos.length; i++){
-            personas.innerHTML += `
-            <option value="${datosPersonas.datos[i].id_persona}">${datosPersonas.datos[i].id_persona} - ${datosPersonas.datos[i].nombre} ${datosPersonas.datos[i].apellido}</option>
-            `;
-        }
+function armarOpcionesPersonas(textoPlaceholder: string) {
+    let html = `<option value="">${textoPlaceholder}</option>`;
+    for (let i = 0; i < listaPersonas.length; i++) {
+        let p = listaPersonas[i];
+        html += `<option value="${p.id_persona}">${p.apellido}, ${p.nombre} (DNI: ${p.dni})</option>`;
     }
+    return html;
+}
+
+async function listarPersonas() {
+    let datosPersonas = await obtenerPersonas();
+
+    if (!datosPersonas || !Array.isArray(datosPersonas.datos))
+        return;
+
+    listaPersonas = datosPersonas.datos;
+
+    let selects = document.querySelectorAll<HTMLSelectElement>("#contenedor-personas .persona-select");
+    selects.forEach((select) => {
+        let valorPrevio = select.value;
+        select.innerHTML = armarOpcionesPersonas("Seleccione una persona...");
+        if (valorPrevio !== "")
+            select.value = valorPrevio;
+    });
+}
+
+async function agregarPersonaConvenio() {
+    let contenedor = document.getElementById("contenedor-personas");
+    if (!contenedor)
+        return;
+
+    if (listaPersonas.length === 0)
+        await listarPersonas();
+
+    let fila = document.createElement("div");
+    fila.className = "border rounded p-3 d-flex flex-column gap-2 fila-persona-extra";
+
+    fila.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+            <strong>Persona vinculada adicional</strong>
+            <button type="button" class="btn btn-outline-danger btn-sm btn-quitar-persona">Quitar</button>
+        </div>
+        <select class="form-select persona-select">
+            ${armarOpcionesPersonas("Seleccione una persona...")}
+        </select>
+        <input type="text" class="form-control persona-rol" placeholder="Rol en el convenio (ej: Coordinador, Pasante, Tutor)" />
+        <div class="row g-2">
+            <div class="col-12 col-md-6">
+                <label class="form-label">Fecha de inicio</label>
+                <input type="date" class="form-control persona-fecha-inicio" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label">Fecha de fin (opcional)</label>
+                <input type="date" class="form-control persona-fecha-fin" />
+            </div>
+        </div>
+    `;
+
+    fila.querySelector(".btn-quitar-persona")?.addEventListener("click", () => {
+        fila.remove();
+    });
+
+    contenedor.appendChild(fila);
+}
+
+// Detecta si el tipo de instrumento elegido corresponde a pasantía y despliega los campos de la consigna
+function esTipoPasantia(): boolean {
+    const selectTipo = document.getElementById("tipo") as HTMLSelectElement | null;
+    if (!selectTipo || selectTipo.selectedIndex < 0)
+        return false;
+
+    const textoTipo = selectTipo.options[selectTipo.selectedIndex]?.text ?? "";
+    return normalizar(textoTipo).includes("pasantia");
+}
+
+function actualizarSeccionPasantias() {
+    const seccion = document.getElementById("seccion-pasantias");
+    if (!seccion)
+        return;
+
+    if (!esTipoPasantia()) {
+        seccion.innerHTML = "";
+        return;
+    }
+
+    seccion.innerHTML = `
+        <div class="border rounded p-3 mt-2 d-flex flex-column gap-3 bg-light">
+            <h5 class="titulo h5 mb-0">Datos complementarios de pasantía</h5>
+            <input type="text" id="pasantia-carrera" class="form-control" placeholder="Carrera (ej: Ingeniería en Sistemas / Analista Programador)" />
+            <div class="row g-2">
+                <div class="col-12 col-md-6">
+                    <input type="text" id="pasantia-tutor-academico" class="form-control" placeholder="Tutor académico (UNLPam)" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <input type="text" id="pasantia-tutor-externo" class="form-control" placeholder="Tutor externo (Empresa / Institución)" />
+                </div>
+            </div>
+            <div class="row g-2">
+                <div class="col-12 col-md-4">
+                    <input type="number" min="1" max="40" id="pasantia-carga-horaria" class="form-control" placeholder="Carga horaria semanal (hs)" />
+                </div>
+                <div class="col-12 col-md-4">
+                    <input type="number" min="0" step="0.01" id="pasantia-asignacion" class="form-control" placeholder="Asignación estímulo ($)" />
+                </div>
+                <div class="col-12 col-md-4">
+                    <input type="text" id="pasantia-seguro" class="form-control" placeholder="Seguro / Póliza ART" />
+                </div>
+            </div>
+        </div>
+    `;
+}
 
     async function listarInstrumentos() {
         let selectTipo = document.getElementById("tipo") as HTMLSelectElement | null;
@@ -318,16 +425,53 @@ async function agregarParteFirmante() {
     async function registrarConvenio(){
     // 1. Validaciones antes de enviar nada
     // 1. Validación (reemplaza la comparación entre primera-institucion y segunda-institucion)
-    let selectsInstituciones = Array.from(
-        document.querySelectorAll<HTMLSelectElement>("#contenedor-instituciones .institucion-select")
-    );
-    let institucionesSeleccionadas = selectsInstituciones
-        .map((s) => s.value)
-        .filter((v) => v !== "");
+        let selectsInstituciones = Array.from(
+            document.querySelectorAll<HTMLSelectElement>("#contenedor-instituciones .institucion-select")
+        );
+        let institucionesSeleccionadas = selectsInstituciones
+            .map((s) => s.value)
+            .filter((v) => v !== "");
 
-    if (new Set(institucionesSeleccionadas).size !== institucionesSeleccionadas.length) {
-        alert("Las instituciones firmantes deben ser distintas entre sí.");
+        if (new Set(institucionesSeleccionadas).size !== institucionesSeleccionadas.length) {
+            alert("Las instituciones firmantes deben ser distintas entre sí.");
+            return;
+        }
+
+        let filasPersonas = Array.from(document.querySelectorAll<HTMLElement>("#contenedor-personas .fila-persona"));
+        let personasSeleccionadas: { id_persona: string; rol: string; fecha_inicio: string; fecha_fin: string }[] = [];
+
+    for (let i = 0; i < filasPersonas.length; i++) {
+        let fila = filasPersonas[i];
+        let idPersona = (fila.querySelector(".persona-select") as HTMLSelectElement | null)?.value ?? "";
+        let rol = (fila.querySelector(".persona-rol") as HTMLInputElement | null)?.value.trim() ?? "";
+        let fechaInicio = (fila.querySelector(".persona-fecha-inicio") as HTMLInputElement | null)?.value ?? "";
+        let fechaFin = (fila.querySelector(".persona-fecha-fin") as HTMLInputElement | null)?.value ?? "";
+
+        if (idPersona === "" && rol === "" && fechaInicio === "")
+            continue;
+
+        if (idPersona === "" || rol === "" || fechaInicio === "") {
+            alert("Para cada persona vinculada completá persona, rol y fecha de inicio.");
+            return;
+        }
+
+        personasSeleccionadas.push({ id_persona: idPersona, rol, fecha_inicio: fechaInicio, fecha_fin: fechaFin });
+    }   
+
+    if (new Set(personasSeleccionadas.map((p) => p.id_persona)).size !== personasSeleccionadas.length) {
+        alert("No podés vincular dos veces a la misma persona en el convenio.");
         return;
+    }
+
+    if (esTipoPasantia()) {
+        if (personasSeleccionadas.length === 0) {
+            alert("Para un convenio de pasantía debés vincular al menos al pasante.");
+            return;
+        }
+        if (valor("pasantia-carrera") === "" || valor("pasantia-tutor-academico") === "" || valor("pasantia-carga-horaria") === "") {
+            alert("Completá al menos carrera, tutor académico y carga horaria de la pasantía.");
+            return;
+        }
     }
 
     let inputArchivo = document.getElementById("archivo") as HTMLInputElement;
@@ -441,7 +585,48 @@ async function agregarParteFirmante() {
             avisos += "\n- No se pudo registrar la parte " + (i + 1);
     }
 
-    // 4. Personas y pasantias
+    // 4. Personas y pasantías
+    let primeraParticipacionId: string | null = null;
+
+    for (let i = 0; i < personasSeleccionadas.length; i++) {
+        let p = personasSeleccionadas[i];
+        let participacion = new FormData();
+        participacion.append("id_instrumento", idInstrumento);
+       participacion.append("id_persona", p.id_persona);
+        participacion.append("rol", p.rol);
+        participacion.append("fecha_inicio", p.fecha_inicio);
+        if (p.fecha_fin !== "")
+           participacion.append("fecha_fin", p.fecha_fin);
+
+        let resParticipacion = await registrarParticipacion(participacion);
+        if (resParticipacion.datos == null && resParticipacion.data == null) {
+            avisos += "\n- No se pudo vincular a una de las personas";
+        } else if (i === 0) {
+            let creado = resParticipacion.datos ?? resParticipacion.data;
+            primeraParticipacionId = String(creado.id_participacion ?? creado.id ?? "");
+        }
+    }
+    
+        if (esTipoPasantia() && personasSeleccionadas.length > 0) {
+        let pasantia = new FormData();
+        pasantia.append("id_instrumento", idInstrumento);
+        pasantia.append("id_persona", personasSeleccionadas[0].id_persona);
+        if (primeraParticipacionId)
+            pasantia.append("id_participacion", primeraParticipacionId);
+        pasantia.append("carrera", valor("pasantia-carrera"));
+        pasantia.append("tutor_academico", valor("pasantia-tutor-academico"));
+        if (valor("pasantia-tutor-externo") !== "")
+            pasantia.append("tutor_externo", valor("pasantia-tutor-externo"));
+        pasantia.append("carga_horaria", valor("pasantia-carga-horaria"));
+        if (valor("pasantia-asignacion") !== "")
+            pasantia.append("asignacion_estimulo", valor("pasantia-asignacion"));
+        if (valor("pasantia-seguro") !== "")
+            pasantia.append("seguro", valor("pasantia-seguro"));
+
+        let resPasantia = await registrarPasantia(pasantia);
+        if (resPasantia.datos == null && resPasantia.data == null)
+            avisos += "\n- No se pudieron guardar los datos complementarios de la pasantía";
+    }
 
     // 5. Documento
     if (archivo){
@@ -635,8 +820,10 @@ async function agregarParteFirmante() {
                         <form className="d-flex flex-column gap-3 mb-5">
                             <input type="text" name="codigo" id="codigo" className="form-control" placeholder="Código único"/>
                             <input type="text" name="titulo" id="titulo" className="form-control" placeholder="Título"/>
-                            <select id="tipo" className="form-select" defaultValue="" onChange={listarRelaciones}>
-                                
+                            <select id="tipo" className="form-select" defaultValue="" onChange={() => {
+                                listarRelaciones();
+                                actualizarSeccionPasantias();
+                            }}>
                             </select>
                             <select id="unidad-responsable" name="unidad" className="form-select" defaultValue="">
                             </select>
@@ -695,12 +882,37 @@ async function agregarParteFirmante() {
                             <p className="text-warning">Seleccione un tipo de convenio</p>
                         </form>
 
-                        <h4 className="titulo h4">6. Personas y pasantias</h4>
-                        
-                        <form className="d-flex flex-column gap-3 mb-5">
-                            <select id="personas" className="form-select" defaultValue="">
-                            </select>
-                            <input type="text" id="rol" className="form-control" placeholder="Ingrese el rol de la persona en el convenio"/>
+                        <h4 className="titulo h4">6. Personas y pasantías</h4>
+
+                        <form className="d-flex flex-column gap-3 mb-5" onSubmit={(e) => e.preventDefault()}>
+                            <div id="contenedor-personas" className="d-flex flex-column gap-3">
+                                <div className="border rounded p-3 d-flex flex-column gap-2 fila-persona">
+                                    <select id="personas" className="form-select persona-select" defaultValue="">
+                                        <option value="">Seleccione una persona...</option>
+                                    </select>
+                                    <input
+                                        type="text"
+                                        id="rol"
+                                        className="form-control persona-rol"
+                                        placeholder="Ingrese el rol de la persona en el convenio (ej: Pasante, Coordinador)"
+                                    />
+                                    <div className="row g-2">
+                                        <div className="col-12 col-md-6">
+                                            <label htmlFor="persona-fecha-inicio" className="form-label">Fecha de inicio</label>
+                                            <input type="date" id="persona-fecha-inicio" className="form-control persona-fecha-inicio" />
+                                        </div>
+                                        <div className="col-12 col-md-6">
+                                            <label htmlFor="persona-fecha-fin" className="form-label">Fecha de fin (opcional)</label>
+                                            <input type="date" id="persona-fecha-fin" className="form-control persona-fecha-fin" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="button" className="btn btn-secondary" onClick={agregarPersonaConvenio}>
+                                + Agregar otra persona
+                            </button>
+
                             <div id="seccion-pasantias" className="d-flex flex-column"></div>
                         </form>
 
