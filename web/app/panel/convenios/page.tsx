@@ -1,10 +1,19 @@
 "use client";
 
-import { obtenerConvenioEspecifico, obtenerConvenios, obtenerTiposInstrumento, obtenerUnidades, registrar, registrarParte, subirDocumento } from "@/services/conveniosService";
 import { verificarSesion } from "@/services/authService";
 import { useEffect } from "react";
 import { registrarRelacion } from "@/services/conveniosService";
 import { obtenerPersonas } from "@/services/personasService";
+import {
+    obtenerConvenioEspecifico,
+    obtenerConvenios,
+    obtenerTiposInstrumento,
+    obtenerUnidades,
+    registrar,
+    registrarParte,
+    subirDocumento,
+    cambiarEstado
+} from "@/services/conveniosService";
 
 const CONVENIOS_POR_PAGINA = 10;
 
@@ -236,11 +245,41 @@ if (abrir != null)
                 </ul>
             </div>
         </div>
+        ${datos.data.estado?.nombre === "borrador" ? `
+            <button type="button" class="btn btn-primary mt-3" id="enviar-revision">
+                Enviar a revisión
+            </button>
+        ` : ""}
+
         <button type="button" class="btn btn-danger mt-3" id="cerrar-detalles">
             Cerrar
         </button>
+        
         `;
+        
         modal.querySelector("#cerrar-detalles")?.addEventListener("click", cerrarDetalles);
+        modal.querySelector("#enviar-revision")?.addEventListener("click", async () => {
+        let fundamento = prompt("Ingresá el fundamento del envío a revisión:");
+
+        if (fundamento == null || fundamento.trim() === "") {
+            alert("Tenés que ingresar un fundamento.");
+            return;
+        }
+
+        let respuesta = await cambiarEstado(id, {
+            id_estado_nuevo: 2,
+            fundamento: fundamento.trim()
+        });
+
+        if (respuesta.data == null) {
+            alert(respuesta.mensaje ?? respuesta.message ?? "No se pudo cambiar el estado.");
+            return;
+        }
+
+        alert("El convenio fue enviado a revisión correctamente.");
+        cerrarDetalles();
+        listarConvenios(1);
+    });
         modal.showModal();
     }
 
