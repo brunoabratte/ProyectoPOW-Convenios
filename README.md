@@ -157,8 +157,9 @@ Los seeders crean cuentas **ficticias** para cada rol *(completar con las creden
 | Rol | Usuario | Contraseña |
 |---|---|---|
 | Administración | `admin@convenios.test` | `Admin123!` |
-| Gestión | `gestion@convenios.test ` | `Gestion123!` |
-| Revisión | `gestion.facultad@convenios.test` | `GestionFacultad123!` |
+| Gestión | `gestion@convenios.test` | `Gestion123!` |
+| Gestión | `gestion.facultad@convenios.test` | `GestionFacultad123!` |
+| Revisión | `revision@convenios.test` | `Revision-2026-Pico!47` |
 | Consulta | `consulta@convenios.test` | `Consulta123!` |
 
 ## 🔐 Seguridad y privacidad

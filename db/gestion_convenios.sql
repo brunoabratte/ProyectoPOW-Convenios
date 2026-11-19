@@ -103,6 +103,11 @@ CREATE TABLE `documentos` (
 --
 
 
+INSERT INTO `documentos` (`id_documento`, `id_instrumento`, `id_usuario_subio`, `id_documento_anterior`, `nombre`, `tipo_documento`, `formato`, `ruta_archivo`, `tamanio`, `hash_sha256`, `version`, `created_at`, `updated_at`) VALUES
+(16, 1, 2, NULL, 'ADENDA-2026-001.pdf', 'principal', 'PDF', 'documentos/1/ADENDA-2026-001.pdf', 8788, 'c4f0d92f5b2b66fcfcb2d05772d8128ecc655d7e33856203f10c430626cdc9b8', 1, '2026-11-19 18:06:11', '2026-11-19 18:06:11'),
+(17, 3, 2, NULL, 'PAS-2026-003.pdf', 'principal', 'PDF', 'documentos/3/PAS-2026-003.pdf', 8619, '3b3c8148ff264d59bb2c77f251cae2cc4ed578073ac6f6cf3dd5a89b0a6034c1', 1, '2026-11-19 18:06:11', '2026-11-19 18:06:11'),
+(18, 2, 2, NULL, 'ESP-2026-002.pdf', 'principal', 'PDF', 'documentos/2/ESP-2026-002.pdf', 7257, '2dcb36129bb6597b7ab4d493ae42e3373ed8496d045cbcfaddc2e1e473545d06', 1, '2026-11-19 18:06:11', '2026-11-19 18:06:11'),
+(19, 4, 2, NULL, 'MARCO-2026-004.pdf', 'principal', 'PDF', 'documentos/4/MARCO-2026-004.pdf', 8406, 'b5b368c3c6747962c66c3c49d34735196895f86eccbdf410353ce326056f8672', 1, '2026-11-19 18:06:11', '2026-11-19 18:06:11');
 -- --------------------------------------------------------
 
 --
