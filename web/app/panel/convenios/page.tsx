@@ -2,8 +2,9 @@
 
 import { verificarSesion } from "@/services/authService";
 import { useEffect, useState } from "react";
-import { cambiarEstado, registrarParticipacion, registrarPasantia, registrarRelacion } from "@/services/conveniosService";
+import { registrarParticipacion, registrarPasantia, registrarRelacion } from "@/services/conveniosService";
 import { obtenerPersonas } from "@/services/personasService";
+import { obtenerInstituciones } from "@/services/institucionesService";
 import {
     obtenerConvenioEspecifico,
     obtenerConvenios,
@@ -12,9 +13,9 @@ import {
     registrar,
     registrarParte,
     subirDocumento,
-    actualizarConvenio
+    actualizarConvenio,
+    cambiarEstado
 } from "@/services/conveniosService";
-import { obtenerInstituciones } from "@/services/institucionesService";
 
 const CONVENIOS_POR_PAGINA = 10;
 
