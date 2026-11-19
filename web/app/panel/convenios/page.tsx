@@ -22,6 +22,66 @@ const CONVENIOS_POR_PAGINA = 10;
 export default function ConveniosPage(){
     const [idConvenioEditando, setIdConvenioEditando] = useState<string | null>(null);
     const [versionConvenioEditando, setVersionConvenioEditando] = useState<number | null>(null);
+    const [pasoActual, setPasoActual] = useState(1);
+    function siguientePaso() {
+        if (pasoActual === 1) {
+            const codigo = document.getElementById("codigo") as HTMLInputElement;
+            const titulo = document.getElementById("titulo") as HTMLInputElement;
+            const tipo = document.getElementById("tipo") as HTMLSelectElement;
+            const unidad = document.getElementById("unidad-responsable") as HTMLSelectElement;
+
+            if (!codigo.value.trim()) {
+                alert("Ingrese el código del convenio.");
+                codigo.focus();
+                return;
+            }
+
+            if (!titulo.value.trim()) {
+                alert("Ingrese el título del convenio.");
+                titulo.focus();
+                return;
+            }
+
+            if (!tipo.value) {
+                alert("Seleccione un tipo de convenio.");
+                tipo.focus();
+                return;
+            }
+
+            if (!unidad.value) {
+                alert("Seleccione una unidad responsable.");
+                unidad.focus();
+                return;
+            }
+        }
+
+        if (pasoActual === 2) {
+            const obligaciones = document.getElementById("obligaciones") as HTMLTextAreaElement;
+            const marcoLegal = document.getElementById("marco-legal") as HTMLTextAreaElement;
+
+            if (!obligaciones.value.trim()) {
+                alert("Describa las obligaciones y responsabilidades de las partes.");
+                obligaciones.focus();
+                return;
+            }
+
+            if (!marcoLegal.value.trim()) {
+                alert("Indique el marco legal y la normativa aplicable.");
+                marcoLegal.focus();
+                return;
+            }
+        }
+
+        if (pasoActual < 5) {
+            setPasoActual(pasoActual + 1);
+        }
+    }
+
+    function anteriorPaso() {
+        if (pasoActual > 1) {
+            setPasoActual(pasoActual - 1);
+        }
+    }
     const [rolUsuario, setRolUsuario] = useState<string | null>(null);
     const rolUsuarioRef = useRef<string | null>(null);
 
@@ -47,9 +107,21 @@ export default function ConveniosPage(){
     }, []);
 
     async function abrirModal() {
+        function siguientePaso() {
+            if (pasoActual < 5) {
+                setPasoActual(pasoActual + 1);
+            }
+        }
+
+        function anteriorPaso() {
+            if (pasoActual > 1) {
+                setPasoActual(pasoActual - 1);
+            }
+        }
         if (rolUsuarioRef.current === "consulta") return;
         const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
         await listarPersonas();
+        setPasoActual(1);
         modal.showModal();
     }
 
@@ -110,6 +182,7 @@ export default function ConveniosPage(){
         }
 
         const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
+        setPasoActual(1);
         modal.showModal();
     }
 
@@ -1108,125 +1181,202 @@ function actualizarSeccionPasantias() {
                             <h3 className="titulo h3">Formulario de registro de un nuevo convenio</h3>
                             <button type="button" className="btn btn-danger" onClick={cerrarModal}>Cerrar</button>
                         </div>
-                        
-                        <h4 className="titulo h4">1. Informacion general</h4>
+                        <div className="mb-4">
+                            <div className="d-flex justify-content-between mb-2">
+                                <small className="text-muted">Paso {pasoActual} de 5</small>
+                                <small className="text-muted">
+                                    {pasoActual * 20}% completado
+                                </small>
+                            </div>
 
-                        <form className="d-flex flex-column gap-3 mb-5">
+                            <div className="progress" style={{ height: "8px" }}>
+                                <div
+                                    className="progress-bar"
+                                    role="progressbar"
+                                    style={{ width: `${pasoActual * 20}%` }}
+                                    aria-valuenow={pasoActual * 20}
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                />
+                            </div>
+                        </div>
+                        <div style={{ display: pasoActual === 1 ? "block" : "none" }}>
+                            <h4 className="titulo h4 mb-4">Paso 1: Información general</h4>
+
+                            <form className="d-flex flex-column gap-3 mb-5">
                             <input type="text" name="codigo" id="codigo" className="form-control" placeholder="Código único"/>
                             <input type="text" name="titulo" id="titulo" className="form-control" placeholder="Título"/>
                             <select id="tipo" className="form-select" defaultValue="" onChange={() => {
                                 listarRelaciones();
                                 actualizarSeccionPasantias();
                             }}>
-                            </select>
-                            <select id="unidad-responsable" name="unidad" className="form-select" defaultValue="">
-                            </select>
-                            <textarea id="objeto" name="objeto" className="form-control" rows={4} placeholder="Ingrese el objeto del convenio..."></textarea>
-                            <textarea id="alcance" name="alcance" className="form-control" rows={4} placeholder="Ingrese el alcance del convenio..."/>
-                        </form>
-
-                        <h4 className="titulo h4">2. Informacion administrativa y legal</h4>
-
-                        <form className="d-flex flex-column gap-3 mb-5">
-                            <textarea className="form-control" name="obligaciones" id="obligaciones" placeholder="Obligaciones..." rows={4}></textarea>
-                            <textarea className="form-control" name="rescision" id="condiciones-rescision" placeholder="Condiciones de rescision..." rows={4}></textarea>
-                            <textarea className="form-control" name="marco_legal" id="marco-legal" placeholder="Ingrese marco legal..." rows={4}></textarea>
-                            <input type="text" id="resolucion" name="resolucion" className="form-control" placeholder="Ingrese la resolucion"/>
-                            <input type="text" id="expediente" name="expediente_referencia" className="form-control" placeholder="Ingrese un expediente o referencia"/>
-                            <textarea className="form-control" name="condiciones_renovacion" id="condiciones-renovacion" placeholder="Ingrese las condiciones de renovacion..." rows={4}></textarea>
-                            <textarea className="form-control" name="confidencialidad" id="confidencialidad" placeholder="Ingrese la confidencialidad..." rows={4}></textarea>
-                            <textarea className="form-control" name="notas" id="notas-adicionales" placeholder="Notas adicionales..." rows={4}></textarea>
-                        </form>
-
-                        <h4 className="titulo h4">3. Fechas del convenio</h4>
-
-                        <form className="d-flex flex-column gap-3 mb-5">
-                            <label htmlFor="fecha-firma" className="form-label">Fecha de firma</label>
-                            <input type="date" name="fecha_firma" id="fecha-firma"/>
-                            <label htmlFor="fecha-inicio" className="form-label">Fecha de inicio</label>
-                            <input type="date" name="fecha_inicio" id="fecha-inicio"/>
-                            <label htmlFor="fecha-vencimiento" className="form-label">Fecha de vencimiento</label>
-                            <input type="date" name="fecha_vencimiento" id="fecha-vencimiento"/>
-                            <label htmlFor="plazo-preaviso" className="form-label">Plazo de preaviso (en días)</label>
-                            <input type="number" min={0} name="plazo_preaviso" id="plazo-preaviso"/>
-                        </form>
-
-                        <h4 className="titulo h4">4. Partes e instituciones</h4>
-
-                        <form className="d-flex flex-column gap-3 mb-5" onSubmit={(e) => e.preventDefault()}>
-                            <h5 className="titulo h5">Instituciones firmantes</h5>
-
-                            <div id="contenedor-instituciones" className="d-flex flex-column gap-2">
-                                <select id="primera-institucion" name="primera_institucion" className="form-select border rounded institucion-select" defaultValue="">
-                                    <option value="">Seleccione institución (Parte 1)...</option>
                                 </select>
-                                <select id="segunda-institucion" name="segunda_institucion" className="form-select border rounded institucion-select" defaultValue="">
-                                    <option value="">Seleccione institución (Parte 2)...</option>
+                                <select id="unidad-responsable" name="unidad" className="form-select" defaultValue="">
                                 </select>
-                            </div>
+                                <textarea id="objeto" name="objeto" className="form-control" rows={4} placeholder="Ingrese el objeto del convenio..."></textarea>
+                                <textarea id="alcance" name="alcance" className="form-control" rows={4} placeholder="Ingrese el alcance del convenio..."/>
+                            </form>
+                        </div>
 
-                            <button type="button" className="btn btn-secondary" onClick={agregarParteFirmante}>
-                                Agregar nueva institucion
-                            </button>
-                        </form>
+                        <div style={{ display: pasoActual === 2 ? "block" : "none" }}>
+                            <h4 className="titulo h4">2. Informacion administrativa y legal</h4>
 
-                        <h4 className="titulo h4">5. Relaciones</h4>
+                            <form className="d-flex flex-column gap-3 mb-5">
+                                <label htmlFor="obligaciones" className="form-label">
+                                    Obligaciones y responsabilidades de las partes *
+                                </label>
+                                <textarea
+                                    className="form-control"
+                                    name="obligaciones"
+                                    id="obligaciones"
+                                    placeholder="Describa qué compromisos asume cada institución o parte involucrada. Por ejemplo: aportar recursos, designar responsables, brindar espacios físicos, supervisar actividades o entregar informes."
+                                    rows={4}
+                                ></textarea>
+                                <small className="form-text text-muted">
+                                    Indique las responsabilidades de cada parte de manera clara y específica.
+                                </small>
+                                <textarea className="form-control" name="rescision" id="condiciones-rescision" placeholder="Condiciones de rescision..." rows={4}></textarea>
+                                <label htmlFor="marco-legal" className="form-label">
+                                    Marco legal y normativa aplicable *
+                                </label>
+                                <textarea
+                                    className="form-control"
+                                    name="marco_legal"
+                                    id="marco-legal"
+                                    placeholder="Indique las leyes, resoluciones, ordenanzas o reglamentos que respaldan el convenio. Incluya número, año y organismo emisor cuando corresponda."
+                                    rows={4}
+                                ></textarea>
+                                <small className="form-text text-muted">
+                                    Mencione las normas que dan fundamento jurídico al acuerdo.
+                                </small>
+                                <input type="text" id="resolucion" name="resolucion" className="form-control" placeholder="Ingrese la resolucion"/>
+                                <input type="text" id="expediente" name="expediente_referencia" className="form-control" placeholder="Ingrese un expediente o referencia"/>
+                                <textarea className="form-control" name="condiciones_renovacion" id="condiciones-renovacion" placeholder="Ingrese las condiciones de renovacion..." rows={4}></textarea>
+                                <textarea className="form-control" name="confidencialidad" id="confidencialidad" placeholder="Ingrese la confidencialidad..." rows={4}></textarea>
+                                <textarea className="form-control" name="notas" id="notas-adicionales" placeholder="Notas adicionales..." rows={4}></textarea>
+                            </form>
+                        </div>
 
-                        <form id="relaciones-convenios" className="d-flex flex-column gap-3 mb-5">
-                            <p className="text-warning">Seleccione un tipo de convenio</p>
-                        </form>
+                        <div style={{ display: pasoActual === 3 ? "block" : "none" }}>
+                            <h4 className="titulo h4">3. Fechas del convenio</h4>
 
-                        <h4 className="titulo h4">6. Personas y pasantías</h4>
+                            <form className="d-flex flex-column gap-3 mb-5">
+                                <label htmlFor="fecha-firma" className="form-label">Fecha de firma</label>
+                                <input type="date" name="fecha_firma" id="fecha-firma"/>
+                                <label htmlFor="fecha-inicio" className="form-label">Fecha de inicio</label>
+                                <input type="date" name="fecha_inicio" id="fecha-inicio"/>
+                                <label htmlFor="fecha-vencimiento" className="form-label">Fecha de vencimiento</label>
+                                <input type="date" name="fecha_vencimiento" id="fecha-vencimiento"/>
+                                <label htmlFor="plazo-preaviso" className="form-label">Plazo de preaviso (en días)</label>
+                                <input type="number" min={0} name="plazo_preaviso" id="plazo-preaviso"/>
+                            </form>
+                        </div>
 
-                        <form className="d-flex flex-column gap-3 mb-5" onSubmit={(e) => e.preventDefault()}>
-                            <div id="contenedor-personas" className="d-flex flex-column gap-3">
-                                <div className="border rounded p-3 d-flex flex-column gap-2 fila-persona">
-                                    <select id="personas" className="form-select persona-select" defaultValue="">
-                                        <option value="">Seleccione una persona...</option>
+                        <div style={{ display: pasoActual === 4 ? "block" : "none" }}>
+                            <h4 className="titulo h4">4. Partes e instituciones</h4>
+
+                            <form className="d-flex flex-column gap-3 mb-5" onSubmit={(e) => e.preventDefault()}>
+                                <h5 className="titulo h5">Instituciones firmantes</h5>
+
+                                <div id="contenedor-instituciones" className="d-flex flex-column gap-2">
+                                    <select id="primera-institucion" name="primera_institucion" className="form-select border rounded institucion-select" defaultValue="">
+                                        <option value="">Seleccione institución (Parte 1)...</option>
                                     </select>
-                                    <input
-                                        type="text"
-                                        id="rol"
-                                        className="form-control persona-rol"
-                                        placeholder="Ingrese el rol de la persona en el convenio (ej: Pasante, Coordinador)"
-                                    />
-                                    <div className="row g-2">
-                                        <div className="col-12 col-md-6">
-                                            <label htmlFor="persona-fecha-inicio" className="form-label">Fecha de inicio</label>
-                                            <input type="date" id="persona-fecha-inicio" className="form-control persona-fecha-inicio" />
-                                        </div>
-                                        <div className="col-12 col-md-6">
-                                            <label htmlFor="persona-fecha-fin" className="form-label">Fecha de fin (opcional)</label>
-                                            <input type="date" id="persona-fecha-fin" className="form-control persona-fecha-fin" />
+                                    <select id="segunda-institucion" name="segunda_institucion" className="form-select border rounded institucion-select" defaultValue="">
+                                        <option value="">Seleccione institución (Parte 2)...</option>
+                                    </select>
+                                </div>
+
+                                <button type="button" className="btn btn-secondary" onClick={agregarParteFirmante}>
+                                    Agregar nueva institucion
+                                </button>
+                            </form>
+
+                            <h4 className="titulo h4">5. Relaciones entre convenios</h4>
+
+                            <form id="relaciones-convenios" className="d-flex flex-column gap-3 mb-5">
+                                <p className="text-warning">Seleccione un tipo de convenio</p>
+                            </form>
+                        </div>
+
+                        <div style={{ display: pasoActual === 5 ? "block" : "none" }}>
+                            <h4 className="titulo h4">6. Personas y pasantías</h4>
+
+                            <form className="d-flex flex-column gap-3 mb-5" onSubmit={(e) => e.preventDefault()}>
+                                <div id="contenedor-personas" className="d-flex flex-column gap-3">
+                                    <div className="border rounded p-3 d-flex flex-column gap-2 fila-persona">
+                                        <select id="personas" className="form-select persona-select" defaultValue="">
+                                            <option value="">Seleccione una persona...</option>
+                                        </select>
+                                        <input
+                                            type="text"
+                                            id="rol"
+                                            className="form-control persona-rol"
+                                            placeholder="Ingrese el rol de la persona en el convenio (ej: Pasante, Coordinador)"
+                                        />
+                                        <div className="row g-2">
+                                            <div className="col-12 col-md-6">
+                                                <label htmlFor="persona-fecha-inicio" className="form-label">Fecha de inicio</label>
+                                                <input type="date" id="persona-fecha-inicio" className="form-control persona-fecha-inicio" />
+                                            </div>
+                                            <div className="col-12 col-md-6">
+                                                <label htmlFor="persona-fecha-fin" className="form-label">Fecha de fin (opcional)</label>
+                                                <input type="date" id="persona-fecha-fin" className="form-control persona-fecha-fin" />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <button type="button" className="btn btn-secondary" onClick={agregarPersonaConvenio}>
-                                + Agregar otra persona
+                                <button type="button" className="btn btn-secondary" onClick={agregarPersonaConvenio}>
+                                    + Agregar otra persona
+                                </button>
+
+                                <div id="seccion-pasantias" className="d-flex flex-column"></div>
+                            </form>
+
+                            <h4 className="titulo h4">7. Documentacion</h4>
+
+                            <form className="d-flex flex-column gap-3 mb-5">
+                                <label htmlFor="archivo" className="form-label">Archivo PDF</label>
+                                <input type="file" name="archivo" id="archivo" accept="application/pdf" className="form-control"/>
+                                <select className="form-select border rounded" name="tipo_documento" id="tipo_documento" defaultValue="tipo-documento">
+                                    <option value="tipo-documento">Tipo de documento</option>
+                                    <option value="principal">Principal</option>
+                                    <option value="anexo">Anexo</option>
+                                    <option value="dictamen">Dictamen</option>
+                                    <option value="resolucion">Resolucion</option>
+                                    <option value="otro">Otro</option>
+                                </select>
+                            </form>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                            <button
+                                type="button"
+                                className="btn btn-outline-secondary"
+                                onClick={anteriorPaso}
+                                disabled={pasoActual === 1}
+                            >
+                                Anterior
                             </button>
 
-                            <div id="seccion-pasantias" className="d-flex flex-column"></div>
-                        </form>
-
-                        <h4 className="titulo h4">7. Documentacion</h4>
-
-                        <form className="d-flex flex-column gap-3 mb-5">
-                            <label htmlFor="archivo" className="form-label">Archivo PDF</label>
-                            <input type="file" name="archivo" id="archivo" accept="application/pdf" className="form-control"/>
-                            <select className="form-select border rounded" name="tipo_documento" id="tipo_documento" defaultValue="tipo-documento">
-                                <option value="tipo-documento">Tipo de documento</option>
-                                <option value="principal">Principal</option>
-                                <option value="anexo">Anexo</option>
-                                <option value="dictamen">Dictamen</option>
-                                <option value="resolucion">Resolucion</option>
-                                <option value="otro">Otro</option>
-                            </select>
-                        </form>
-                        <button className="btn btn-secondary" type="button" onClick={registrarConvenio}>
-                            {idConvenioEditando !== null ? "Guardar cambios" : "Registrar convenio"}
-                        </button>
+                            {pasoActual < 5 ? (
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={siguientePaso}
+                                >
+                                    Siguiente
+                                </button>
+                            ) : (
+                                <button
+                                    className="btn btn-success"
+                                    type="button"
+                                    onClick={registrarConvenio}
+                                >
+                                    {idConvenioEditando !== null ? "Guardar cambios" : "Registrar convenio"}
+                                </button>
+                            )}
+                        </div>
                 </dialog>
                 <div className="d-flex flex-column gap-3">
                     <form className="d-flex flex-column border rounded">
