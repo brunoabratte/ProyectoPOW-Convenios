@@ -13,6 +13,7 @@ import {
     registrar,
     registrarParte,
     subirDocumento,
+    descargarDocumento,
     actualizarConvenio,
     cambiarEstado
 } from "@/services/conveniosService";
@@ -47,14 +48,14 @@ export default function ConveniosPage(){
     }, []);
 
     async function abrirModal() {
-        if (rolUsuarioRef.current === "consulta") return;
+        if (!puedeCrearOEditarConvenios(rolUsuarioRef.current)) return;
         const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
         await listarPersonas();
         modal.showModal();
     }
 
     async function editarConvenio(id: string) {
-        if (rolUsuarioRef.current === "consulta") return;
+        if (!puedeCrearOEditarConvenios(rolUsuarioRef.current)) return;
         let respuesta = await obtenerConvenioEspecifico(id);
 
         if (!respuesta.data) {
@@ -124,6 +125,21 @@ export default function ConveniosPage(){
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
             .replace(/[-\s]/g, "_");
+    }
+
+    function escaparHtml(texto: string) {
+        const entidades: Record<string, string> = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        };
+        return texto.replace(/[&<>"']/g, (caracter) => entidades[caracter] ?? caracter);
+    }
+
+    function puedeCrearOEditarConvenios(rol: string | null) {
+        return rol === "admin" || rol === "administracion" || rol === "gestion";
     }
 
     let listaInstituciones: any[] = [];
@@ -438,6 +454,24 @@ function actualizarSeccionPasantias() {
 
         let datos = await obtenerConvenioEspecifico(id);
 
+        if (datos.data == null) {
+            alert(datos.mensaje ?? datos.message ?? "No se pudieron obtener los detalles del convenio.");
+            return;
+        }
+
+        let documentos = datos.data.documentos ?? [];
+        let htmlDocumentos = documentos.length === 0
+            ? `<p class="text-muted">No hay documentos PDF adjuntos.</p>`
+            : `<ul class="list-unstyled">${documentos.map((documento: any) => `
+                <li class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <span>${documento.tipo_documento === "principal" ? "Convenio PDF" : escaparHtml(String(documento.nombre ?? "Documento PDF"))} (versión ${escaparHtml(String(documento.version ?? "1"))})</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-descargar-detalle"
+                        data-id="${escaparHtml(String(documento.id_documento))}" data-nombre="${escaparHtml(String(documento.nombre ?? "convenio.pdf"))}">
+                        ${documento.tipo_documento === "principal" ? "Descargar Convenio PDF" : "Descargar PDF"}
+                    </button>
+                </li>
+            `).join("")}</ul>`;
+
         modal.innerHTML = "";
 
         console.log(datos);
@@ -477,6 +511,10 @@ function actualizarSeccionPasantias() {
                 </ul>
             </div>
         </div>
+        <section class="mt-3">
+            <h5 class="titulo h5">Documentos</h5>
+            ${htmlDocumentos}
+        </section>
         ${normalizar(String(datos.data.estado?.nombre ?? "")) === "borrador" ? `
             <button type="button" class="btn btn-primary mt-3" id="enviar-revision">
                 Enviar a revisión
@@ -510,6 +548,16 @@ function actualizarSeccionPasantias() {
         
 
         modal.querySelector("#cerrar-detalles")?.addEventListener("click", cerrarDetalles);
+        modal.querySelectorAll(".btn-descargar-detalle").forEach((boton) => {
+            boton.addEventListener("click", async () => {
+                let idDocumento = boton.getAttribute("data-id");
+                let nombre = boton.getAttribute("data-nombre") ?? "convenio.pdf";
+                if (idDocumento == null) return;
+
+                let ok = await descargarDocumento(idDocumento, nombre);
+                if (!ok) alert("No se pudo descargar el PDF del convenio.");
+            });
+        });
         modal.querySelector("#enviar-revision")?.addEventListener("click", async () => {
         let fundamento = prompt("Ingresá el fundamento del envío a revisión:");
 
@@ -1028,7 +1076,7 @@ function actualizarSeccionPasantias() {
                     VER DETALLES
                 </button>
 
-                ${rolUsuarioRef.current !== "consulta" && normalizar(String(conveniosPagina[i].estado?.nombre ?? "")) === "borrador" ? `
+                ${puedeCrearOEditarConvenios(rolUsuarioRef.current) && normalizar(String(conveniosPagina[i].estado?.nombre ?? "")) === "borrador" ? `
                     <button
                         type="button"
                         class="btn btn-warning btn-editar"
@@ -1099,7 +1147,7 @@ function actualizarSeccionPasantias() {
                         Consulta y administración de instrumentos
                         </small>
                     </div>
-                    {rolUsuario !== "consulta" && <button className="btn btn-secondary" onClick={abrirModal}>
+                    {puedeCrearOEditarConvenios(rolUsuario) && <button className="btn btn-secondary" onClick={abrirModal}>
                         + Nuevo convenio
                     </button>}
                 </div>
