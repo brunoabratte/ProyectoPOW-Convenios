@@ -45,3 +45,17 @@ export async function obtenerCantidadAlertas() {
 
     return cantidad;
 }
+
+export async function obtenerAlertas() {
+    let token = localStorage.getItem("token");
+
+    let res = await fetch("http://127.0.0.1:8000/api/alertas", {
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    return await res.json();
+}
