@@ -181,7 +181,7 @@ export default function RevisionesPage(){
                 ${escapar(documentos[i].nombre)} (${escapar(documentos[i].tipo_documento)}, versi&oacute;n ${escapar(documentos[i].version)})
                 <button type="button" class="btn btn-sm btn-outline-secondary btn-descargar"
                     data-id="${documentos[i].id_documento}" data-nombre="${escapar(documentos[i].nombre)}">
-                    Descargar
+                    ${documentos[i].tipo_documento === "principal" ? "Descargar Convenio PDF" : "Descargar PDF"}
                 </button>
             </li>
             `;

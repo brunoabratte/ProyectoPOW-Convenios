@@ -211,6 +211,7 @@ export default function ConveniosPage(){
     const rolUsuarioRef = useRef<string | null>(null);
 
     useEffect(() => {
+        mostrarSpinnerConvenios();
         verificarSesion();
         obtenerRolActual().then((rol) => {
             rolUsuarioRef.current = rol;
@@ -326,6 +327,20 @@ export default function ConveniosPage(){
 
     function puedeCrearOEditarConvenios(rol: string | null) {
         return rol === "admin" || rol === "administracion" || rol === "gestion";
+    }
+
+    function mostrarSpinnerConvenios() {
+        const resultados = document.getElementById("resultados");
+        if (!resultados) return;
+
+        resultados.innerHTML = `
+            <div class="d-flex flex-column justify-content-center align-items-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-3 text-secondary">Cargando convenios...</p>
+            </div>
+        `;
     }
 
     let listaInstituciones: any[] = [];
@@ -1157,14 +1172,7 @@ function actualizarSeccionPasantias() {
     if (filtroTipo == null || filtroEstado == null || filtroUnidad == null || filtroFechas == null || buscador == null || resultados == null)
         return;
 
-    resultados.innerHTML = `
-        <div class="d-flex flex-column justify-content-center align-items-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando...</span>
-            </div>
-            <p class="mt-3 text-secondary">Cargando convenios...</p>
-        </div>
-    `;
+    mostrarSpinnerConvenios();
 
     let datos;
     try {

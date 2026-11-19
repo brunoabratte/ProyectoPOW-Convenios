@@ -59,7 +59,8 @@ class User extends Authenticatable
     // Métodos para identificar roles
     public function esAdmin(): bool
     {
-        return $this->rol === 'admin';
+        // El rol existente "administracion" funciona como administrador global.
+        return $this->rol === 'administracion';
     }
 
     public function esAdministracion(): bool

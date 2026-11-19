@@ -653,7 +653,7 @@ CREATE TABLE `usuarios` (
 INSERT INTO `usuarios` (`id_usuario`, `name`, `email`, `password`, `rol`, `id_unidad`, `created_at`, `updated_at`, `activo`) VALUES
 (2, 'Administrador', 'admin@convenios.test', '$2y$12$wEU35Mq3KJCIcdbyFuHFK.CM5nDMiImgFNKpFXSfw.sm2OIPk.8PO', 'administracion', 1, '2026-11-06 20:21:12', '2026-11-17 04:44:33', 1),
 (3, 'Usuario Gestion', 'gestion@convenios.test', '$2y$12$fx28nPleNvNWHWlslxILp.QTTcmrns9ncP27/goCA795kEx74kN.2', 'gestion', 1, '2026-11-09 18:19:17', '2026-11-17 04:44:33', 1),
-(4, 'Usuario Revision', 'revision@convenios.test', '$2y$12$MdbRGApba3XI4Bmiof9X6.T7s6YM3RW8X9UAt5VcJzF1P0J11AlAW', 'revision', 1, '2026-11-09 18:21:27', '2026-11-09 18:21:27', 1),
+(4, 'Usuario Revision', 'revision@convenios.test', '$2y$12$S5BQoLyLBdZFNf0z4ZsbWeII01Lspr6VugMTIN1KELWOSDrIOMlGe', 'revision', 1, '2026-11-09 18:21:27', '2026-11-09 18:21:27', 1),
 (5, 'Usuario Consulta', 'consulta@convenios.test', '$2y$12$qasJbLVp4vNTLFNQ9.zMQuXwEOWDGYO4Nwi7ZL07Sx.3xQ99pyApC', 'consulta', 1, '2026-11-09 19:29:59', '2026-11-17 04:44:34', 1),
 (6, 'Usuario Gestion Facultad', 'gestion.facultad@convenios.test', '$2y$12$SDmynsVk43dqlvVw/P9Lre9HIDw5sVueh3Jq8C2CucnY0DV/pjDMO', 'gestion', 2, '2026-11-09 19:37:48', '2026-11-17 04:44:33', 1);
 

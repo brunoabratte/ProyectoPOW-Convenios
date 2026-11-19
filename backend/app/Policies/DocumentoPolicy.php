@@ -28,7 +28,9 @@ class DocumentoPolicy
 
     public function create(User $user): bool
     {
-        return $user->esAdmin() || $user->esGestion();
+        return $user->esAdmin()
+            || $user->esGestion()
+            || $user->esAdministracion();
     }
 
     public function createVersion(User $user, Documento $documento): bool
