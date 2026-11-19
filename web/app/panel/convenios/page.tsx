@@ -23,6 +23,7 @@ export default function ConveniosPage(){
     const [idConvenioEditando, setIdConvenioEditando] = useState<string | null>(null);
     const [versionConvenioEditando, setVersionConvenioEditando] = useState<number | null>(null);
     const [pasoActual, setPasoActual] = useState(1);
+    
     function siguientePaso() {
         if (pasoActual === 1) {
             const codigo = document.getElementById("codigo") as HTMLInputElement;
@@ -72,6 +73,128 @@ export default function ConveniosPage(){
             }
         }
 
+        if (pasoActual === 3) {
+            const fechaFirma = document.getElementById("fecha-firma") as HTMLInputElement;
+            const fechaInicio = document.getElementById("fecha-inicio") as HTMLInputElement;
+            const fechaVencimiento = document.getElementById("fecha-vencimiento") as HTMLInputElement;
+            const plazoPreaviso = document.getElementById("plazo-preaviso") as HTMLInputElement;
+
+            if (fechaFirma.value && fechaInicio.value && fechaInicio.value < fechaFirma.value) {
+                alert("La fecha de inicio no puede ser anterior a la fecha de firma.");
+                fechaInicio.focus();
+                return;
+            }
+
+            if (fechaInicio.value && fechaVencimiento.value && fechaVencimiento.value < fechaInicio.value) {
+                alert("La fecha de vencimiento no puede ser anterior a la fecha de inicio.");
+                fechaVencimiento.focus();
+                return;
+            }
+
+            if (plazoPreaviso.value && Number(plazoPreaviso.value) < 0) {
+                alert("El plazo de preaviso no puede ser negativo.");
+                plazoPreaviso.focus();
+                return;
+            }
+        }
+
+        if (pasoActual === 4) {
+            const instituciones = document.querySelectorAll(
+                "#contenedor-instituciones .institucion-select"
+            ) as NodeListOf<HTMLSelectElement>;
+
+            let seleccionadas: string[] = [];
+
+            for (const institucion of instituciones) {
+                if (!institucion.value) {
+                    alert("Debe seleccionar todas las instituciones agregadas.");
+                    institucion.focus();
+                    return;
+                }
+
+                if (seleccionadas.includes(institucion.value)) {
+                    alert("No puede seleccionar la misma institución más de una vez.");
+                    institucion.focus();
+                    return;
+                }
+
+                seleccionadas.push(institucion.value);
+            }
+
+            if (seleccionadas.length < 2) {
+                alert("Un convenio debe tener al menos dos instituciones firmantes.");
+                return;
+            }
+        }
+
+        if (pasoActual === 5) {
+        // Validar personas
+        const filas = document.querySelectorAll("#contenedor-personas .fila-persona");
+        const personasSeleccionadas = new Set();
+
+        for (const fila of filas) {
+            const persona = fila.querySelector(".persona-select") as HTMLSelectElement;
+            const rol = fila.querySelector(".persona-rol") as HTMLInputElement;
+            const fechaInicio = fila.querySelector(".persona-fecha-inicio") as HTMLInputElement;
+            const fechaFin = fila.querySelector(".persona-fecha-fin") as HTMLInputElement;
+
+            const tieneDatos =
+                persona.value !== "" ||
+                rol.value.trim() !== "" ||
+                fechaInicio.value !== "" ||
+                fechaFin.value !== "";
+
+            // Si la fila está vacía, no es obligatorio completarla.
+            if (!tieneDatos) continue;
+
+            if (persona.value === "") {
+                alert("Seleccione una persona en todas las filas que haya comenzado a completar.");
+                return;
+            }
+
+            if (rol.value.trim() === "") {
+                alert("Ingrese el rol de cada persona vinculada.");
+                return;
+            }
+
+            if (fechaInicio.value === "") {
+                alert("Ingrese la fecha de inicio de cada persona vinculada.");
+                return;
+            }
+
+            if (fechaFin.value !== "" && fechaFin.value < fechaInicio.value) {
+                alert("La fecha de fin de una persona no puede ser anterior a su fecha de inicio.");
+                return;
+            }
+
+            if (personasSeleccionadas.has(persona.value)) {
+                alert("No puede agregar dos veces a la misma persona.");
+                return;
+            }
+
+            personasSeleccionadas.add(persona.value);
+        }
+
+        // Validar documentación
+        const archivo = document.getElementById("archivo") as HTMLInputElement;
+        const tipoDocumento = document.getElementById("tipo_documento") as HTMLSelectElement;
+
+        if (archivo.files && archivo.files.length > 0) {
+            const documento = archivo.files[0];
+
+            if (documento.type !== "application/pdf" &&
+                !documento.name.toLowerCase().endsWith(".pdf")) {
+                alert("El archivo adjunto debe ser un PDF.");
+                return;
+            }
+
+            if (tipoDocumento.value === "tipo-documento") {
+                alert("Seleccione el tipo de documento.");
+                return;
+            }
+        }
+    }
+
         if (pasoActual < 5) {
             setPasoActual(pasoActual + 1);
         }
@@ -82,6 +205,7 @@ export default function ConveniosPage(){
             setPasoActual(pasoActual - 1);
         }
     }
+
     const [rolUsuario, setRolUsuario] = useState<string | null>(null);
     const rolUsuarioRef = useRef<string | null>(null);
 
@@ -107,18 +231,8 @@ export default function ConveniosPage(){
     }, []);
 
     async function abrirModal() {
-        function siguientePaso() {
-            if (pasoActual < 5) {
-                setPasoActual(pasoActual + 1);
-            }
-        }
-
-        function anteriorPaso() {
-            if (pasoActual > 1) {
-                setPasoActual(pasoActual - 1);
-            }
-        }
         if (rolUsuarioRef.current === "consulta") return;
+
         const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
         await listarPersonas();
         setPasoActual(1);
@@ -568,7 +682,9 @@ function actualizarSeccionPasantias() {
             </button>
         ` : ""}
 
-        ${datos.data.estado?.nombre === "rescindido" ? `
+        ${["aprobado", "firmado", "rescindido"].includes(
+            normalizar(String(datos.data.estado?.nombre ?? ""))
+        ) ? `
             <button type="button" class="btn btn-secondary mt-3" id="marcar-archivado">
                 Archivar convenio
             </button>
@@ -1218,59 +1334,198 @@ function actualizarSeccionPasantias() {
                             </form>
                         </div>
 
+                        
                         <div style={{ display: pasoActual === 2 ? "block" : "none" }}>
-                            <h4 className="titulo h4">2. Informacion administrativa y legal</h4>
+                            <h4 className="titulo h4 mb-4">Paso 2: Información administrativa y legal</h4>
 
                             <form className="d-flex flex-column gap-3 mb-5">
-                                <label htmlFor="obligaciones" className="form-label">
-                                    Obligaciones y responsabilidades de las partes *
-                                </label>
-                                <textarea
-                                    className="form-control"
-                                    name="obligaciones"
-                                    id="obligaciones"
-                                    placeholder="Describa qué compromisos asume cada institución o parte involucrada. Por ejemplo: aportar recursos, designar responsables, brindar espacios físicos, supervisar actividades o entregar informes."
-                                    rows={4}
-                                ></textarea>
-                                <small className="form-text text-muted">
-                                    Indique las responsabilidades de cada parte de manera clara y específica.
-                                </small>
-                                <textarea className="form-control" name="rescision" id="condiciones-rescision" placeholder="Condiciones de rescision..." rows={4}></textarea>
-                                <label htmlFor="marco-legal" className="form-label">
-                                    Marco legal y normativa aplicable *
-                                </label>
-                                <textarea
-                                    className="form-control"
-                                    name="marco_legal"
-                                    id="marco-legal"
-                                    placeholder="Indique las leyes, resoluciones, ordenanzas o reglamentos que respaldan el convenio. Incluya número, año y organismo emisor cuando corresponda."
-                                    rows={4}
-                                ></textarea>
-                                <small className="form-text text-muted">
-                                    Mencione las normas que dan fundamento jurídico al acuerdo.
-                                </small>
-                                <input type="text" id="resolucion" name="resolucion" className="form-control" placeholder="Ingrese la resolucion"/>
-                                <input type="text" id="expediente" name="expediente_referencia" className="form-control" placeholder="Ingrese un expediente o referencia"/>
-                                <textarea className="form-control" name="condiciones_renovacion" id="condiciones-renovacion" placeholder="Ingrese las condiciones de renovacion..." rows={4}></textarea>
-                                <textarea className="form-control" name="confidencialidad" id="confidencialidad" placeholder="Ingrese la confidencialidad..." rows={4}></textarea>
-                                <textarea className="form-control" name="notas" id="notas-adicionales" placeholder="Notas adicionales..." rows={4}></textarea>
+                                <div>
+                                    <label htmlFor="obligaciones" className="form-label">
+                                        Obligaciones y responsabilidades de las partes *
+                                    </label>
+                                    <textarea
+                                        className="form-control"
+                                        name="obligaciones"
+                                        id="obligaciones"
+                                        placeholder="Describa qué compromisos asume cada institución. Por ejemplo: aportar recursos, designar responsables, brindar espacios físicos o supervisar actividades."
+                                        rows={4}
+                                    />
+                                    <small className="form-text text-muted">
+                                        Indique qué debe hacer cada parte durante el desarrollo del convenio.
+                                    </small>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="condiciones-rescision" className="form-label">
+                                        Condiciones para finalizar el convenio anticipadamente
+                                    </label>
+                                    <textarea
+                                        className="form-control"
+                                        name="rescision"
+                                        id="condiciones-rescision"
+                                        placeholder="Explique en qué situaciones puede finalizarse el convenio antes de su vencimiento, cómo debe notificarse y qué procedimiento debe seguirse."
+                                        rows={4}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="marco-legal" className="form-label">
+                                        Marco legal y normativa aplicable *
+                                    </label>
+                                    <textarea
+                                        className="form-control"
+                                        name="marco_legal"
+                                        id="marco-legal"
+                                        placeholder="Indique las leyes, resoluciones, ordenanzas o reglamentos que respaldan el convenio. Incluya número, año y organismo emisor cuando corresponda."
+                                        rows={4}
+                                    />
+                                    <small className="form-text text-muted">
+                                        Mencione las normas que dan fundamento jurídico al acuerdo.
+                                    </small>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="resolucion" className="form-label">
+                                        Número de resolución o acto administrativo
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="resolucion"
+                                        name="resolucion"
+                                        className="form-control"
+                                        placeholder="Ejemplo: Resolución N.º 125/2026"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="expediente" className="form-label">
+                                        Número de expediente o referencia administrativa
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="expediente"
+                                        name="expediente_referencia"
+                                        className="form-control"
+                                        placeholder="Ejemplo: Expediente N.º 1234/2026"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="condiciones-renovacion" className="form-label">
+                                        Condiciones para renovar el convenio
+                                    </label>
+                                    <textarea
+                                        className="form-control"
+                                        name="condiciones_renovacion"
+                                        id="condiciones-renovacion"
+                                        placeholder="Indique si puede renovarse, quién debe solicitar la renovación, con cuánta anticipación y qué requisitos deben cumplirse."
+                                        rows={4}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="confidencialidad" className="form-label">
+                                        Acuerdos de confidencialidad y protección de información
+                                    </label>
+                                    <textarea
+                                        className="form-control"
+                                        name="confidencialidad"
+                                        id="confidencialidad"
+                                        placeholder="Indique qué información debe mantenerse confidencial, quiénes deben protegerla y durante cuánto tiempo, si corresponde."
+                                        rows={4}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="notas-adicionales" className="form-label">
+                                        Observaciones adicionales
+                                    </label>
+                                    <textarea
+                                        className="form-control"
+                                        name="notas"
+                                        id="notas-adicionales"
+                                        placeholder="Agregue cualquier información relevante del convenio que no haya sido contemplada en los campos anteriores."
+                                        rows={4}
+                                    />
+                                </div>
                             </form>
                         </div>
 
+
+                       
                         <div style={{ display: pasoActual === 3 ? "block" : "none" }}>
-                            <h4 className="titulo h4">3. Fechas del convenio</h4>
+                            <h4 className="titulo h4 mb-3">Paso 3: Fechas del convenio</h4>
+
+                            <p className="text-muted mb-4">
+                                Indique las fechas que determinan la vigencia del convenio.
+                                Estos datos permiten calcular su vencimiento y generar alertas.
+                            </p>
 
                             <form className="d-flex flex-column gap-3 mb-5">
-                                <label htmlFor="fecha-firma" className="form-label">Fecha de firma</label>
-                                <input type="date" name="fecha_firma" id="fecha-firma"/>
-                                <label htmlFor="fecha-inicio" className="form-label">Fecha de inicio</label>
-                                <input type="date" name="fecha_inicio" id="fecha-inicio"/>
-                                <label htmlFor="fecha-vencimiento" className="form-label">Fecha de vencimiento</label>
-                                <input type="date" name="fecha_vencimiento" id="fecha-vencimiento"/>
-                                <label htmlFor="plazo-preaviso" className="form-label">Plazo de preaviso (en días)</label>
-                                <input type="number" min={0} name="plazo_preaviso" id="plazo-preaviso"/>
+                                <div>
+                                    <label htmlFor="fecha-firma" className="form-label">
+                                        Fecha de firma
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="fecha_firma"
+                                        id="fecha-firma"
+                                        className="form-control"
+                                    />
+                                    <small className="form-text text-muted">
+                                        Fecha en la que las partes firmaron el convenio.
+                                    </small>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="fecha-inicio" className="form-label">
+                                        Fecha de inicio de vigencia
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="fecha_inicio"
+                                        id="fecha-inicio"
+                                        className="form-control"
+                                    />
+                                    <small className="form-text text-muted">
+                                        Fecha desde la cual comienzan a aplicarse los compromisos del convenio.
+                                    </small>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="fecha-vencimiento" className="form-label">
+                                        Fecha de finalización o vencimiento
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="fecha_vencimiento"
+                                        id="fecha-vencimiento"
+                                        className="form-control"
+                                    />
+                                    <small className="form-text text-muted">
+                                        Último día de vigencia del convenio, si tiene una fecha de finalización establecida.
+                                    </small>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="plazo-preaviso" className="form-label">
+                                        Plazo de preaviso para el vencimiento (en días)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        name="plazo_preaviso"
+                                        id="plazo-preaviso"
+                                        className="form-control"
+                                        placeholder="Ejemplo: 30"
+                                    />
+                                    <small className="form-text text-muted">
+                                        Cantidad de días de anticipación con la que se desea recibir una alerta antes del vencimiento.
+                                    </small>
+                                </div>
                             </form>
                         </div>
+
 
                         <div style={{ display: pasoActual === 4 ? "block" : "none" }}>
                             <h4 className="titulo h4">4. Partes e instituciones</h4>
