@@ -295,3 +295,31 @@ export async function registrarPasantia(datos: FormData) {
 
     return await res.json();
 }
+
+export async function obtenerDashboard() {
+    const token = localStorage.getItem("token");
+
+    const respuesta = await fetch(url + "dashboard", {
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    return await respuesta.json();
+}
+
+export async function obtenerEstados() {
+    const token = localStorage.getItem("token");
+
+    const respuesta = await fetch(url + "estados", {
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    return await respuesta.json();
+}
