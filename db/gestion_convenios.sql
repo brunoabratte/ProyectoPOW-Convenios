@@ -102,17 +102,6 @@ CREATE TABLE `documentos` (
 -- Volcado de datos para la tabla `documentos`
 --
 
-INSERT INTO `documentos` (`id_documento`, `id_instrumento`, `id_usuario_subio`, `id_documento_anterior`, `nombre`, `tipo_documento`, `formato`, `ruta_archivo`, `tamanio`, `hash_sha256`, `version`, `created_at`, `updated_at`) VALUES
-(1, 1, 2, NULL, 'TP03 OCL_2026.docx (1).pdf', 'principal', 'PDF', 'documentos/1/PwRsJTJCbtaqIhwy06QclHtuzCuzA0VHldGEKire.pdf', 315565, '2979166bb56e032f8375902822fa337755bb842f56f23409c0c496fcc1031269', 1, '2026-11-08 19:05:38', '2026-11-08 19:05:38'),
-(2, 1, 2, 1, 'Abratte Regular- (3).pdf', 'principal', 'PDF', 'documentos/1/pRKvQ9uJ9uauQTCCLocoxURCXH29hBpx5epjtlKW.pdf', 479681, '40cadc0853fcd43ca8c16c1b5b5a402e64d4aa2c6ac18d8ccdb15e7847a67b99', 2, '2026-11-08 19:07:13', '2026-11-08 19:07:13'),
-(4, 2, 2, NULL, 'tp6.Recursividad-EstrucDatos2026.pdf', 'principal', 'PDF', 'documentos/2/migOLqzvQHjgTkzKWTDaPsTnYLz24ZWJ32UfvmYd.pdf', 320714, '67168f2e6fbdf378a39679567d8ff0277e7753448c369ff83e242038ed77f3e5', 1, '2026-11-09 01:20:04', '2026-11-09 01:20:04'),
-(5, 1, 2, 2, 'CU-02-consultar_catalogo.pdf', 'principal', 'PDF', 'documentos/1/c2PB2EPgXKoDRPBnEIJ7J6F9crrD9q0trQZxN28C.pdf', 23714, '72bc876b320d3be77757a4d997c29df9714e70b95aefb2c4dc75c844ee9751c3', 3, '2026-11-09 01:20:33', '2026-11-09 01:20:33'),
-(6, 2, 2, 4, 'CU-02-consultar_catalogo.pdf', 'principal', 'PDF', 'documentos/2/zdscI3nV6wXahWDjLLEEYCPx5YaXPZoWnPT66CHn.pdf', 23714, '72bc876b320d3be77757a4d997c29df9714e70b95aefb2c4dc75c844ee9751c3', 2, '2026-11-09 01:20:53', '2026-11-09 01:20:53'),
-(7, 3, 2, NULL, 'tp4.Listas 2026.docx.pdf', 'anexo', 'PDF', 'documentos/3/ocKa0gCP0qMOrYNXtkZHa1HARG4OBRq6BPJCaQgA.pdf', 187608, '3d8b8e2e7680f122a349f06034a55cf4a283eb9c09062684ba3b733be329fcc3', 1, '2026-11-09 01:34:16', '2026-11-09 01:34:16'),
-(8, 3, 2, NULL, 'tp5.Lambda2026.pdf', 'principal', 'PDF', 'documentos/3/NoQPsvN8cSmlGl49MFXz8oUIEW235GYgB1Ob1gAe.pdf', 276922, '36f31f7a08d899ac86062cd8e736c456fc65545db4ceaa323871ff2ad93f7ff0', 1, '2026-11-09 01:39:02', '2026-11-09 01:39:02'),
-(9, 3, 2, 7, 'TP Integrador 1. Lógica-2026 (2).pdf', 'anexo', 'PDF', 'documentos/3/YDFmrnrukVrDW56sGVoBYO2yAB2hIVLbw0JER1oE.pdf', 170036, 'ce6a999730d98fd7fac17c6c79130f92a122a6bf7e3a02b1329952440cc35151', 2, '2026-11-09 02:30:38', '2026-11-09 02:30:38'),
-(10, 3, 2, 9, 'TP03 OCL_2026.docx (1).pdf', 'anexo', 'PDF', 'documentos/3/eUhoUMNljVI3uh5w3Xsyfo9E1yAqnfiHMF5VqLVB.pdf', 315565, '2979166bb56e032f8375902822fa337755bb842f56f23409c0c496fcc1031269', 3, '2026-11-09 03:27:14', '2026-11-09 03:27:14'),
-(11, 3, 3, 10, 'equivalencias.pdf', 'anexo', 'PDF', 'documentos/3/IVvf9PQzqKNl86D2ISPMwgVxFAVtg9EL2SFzrsE8.pdf', 19700, 'e7b1d1284520a4d182f70d9ba1a6be2c67f2b1975ec9fbeef71a254faba788cf', 4, '2026-11-13 08:35:30', '2026-11-13 08:35:30');
 
 -- --------------------------------------------------------
 

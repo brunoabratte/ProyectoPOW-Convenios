@@ -152,7 +152,7 @@ export async function resolverObservacion(id : string){
 }
 
 // PATCH no puede llevar FormData en Laravel (no lo lee), por eso este va en JSON, como el login
-export async function cambiarEstado(id : string, datos : { id_estado_nuevo : number, fundamento : string }){
+export async function cambiarEstado(id : string, datos : { id_estado_nuevo : number, fundamento : string, fecha_firma?: string }){
     let token = localStorage.getItem("token");
 
     let res = await fetch(url + `instrumentos/${id}/estado`, {

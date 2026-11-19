@@ -130,7 +130,7 @@ class PasantiaController extends Controller
 
             'fecha_inicio' => 'required|date',
 
-            'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
+            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
 
             'horas_semanales' => 'required|integer|min:1',
 
