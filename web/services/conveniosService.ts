@@ -43,6 +43,25 @@ export async function registrar(datos : FormData){
     return await res.json();
 }
 
+export async function actualizarConvenio(
+    id: string,
+    datos: any
+) {
+    let token = localStorage.getItem("token");
+
+    let res = await fetch(url + `instrumentos/${id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(datos)
+    });
+
+    return await res.json();
+}
+
 export async function registrarParte(datos : FormData){
     let token = localStorage.getItem("token");
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { verificarSesion } from "@/services/authService";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { registrarRelacion } from "@/services/conveniosService";
 import { obtenerPersonas } from "@/services/personasService";
 import {
@@ -12,12 +12,15 @@ import {
     registrar,
     registrarParte,
     subirDocumento,
-    cambiarEstado
+    actualizarConvenio
 } from "@/services/conveniosService";
 
 const CONVENIOS_POR_PAGINA = 10;
 
 export default function ConveniosPage(){
+    const [idConvenioEditando, setIdConvenioEditando] = useState<string | null>(null);
+    const [versionConvenioEditando, setVersionConvenioEditando] = useState<number | null>(null);
+
     useEffect(() => {
         verificarSesion();
         listarInstrumentos();
@@ -33,6 +36,65 @@ if (abrir != null)
     async function abrirModal() {
         const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
         await listarPersonas();
+        modal.showModal();
+    }
+
+    async function editarConvenio(id: string) {
+        let respuesta = await obtenerConvenioEspecifico(id);
+
+        if (!respuesta.data) {
+            alert("No se pudieron obtener los datos del convenio.");
+            return;
+        }
+
+        let convenio = respuesta.data;
+
+        if (convenio.estado?.nombre !== "borrador") {
+            alert("Solo se pueden editar convenios en estado Borrador.");
+            return;
+        }
+
+        setIdConvenioEditando(String(convenio.id_instrumento));
+        setVersionConvenioEditando(Number(convenio.version));
+
+        // Cargar los catálogos antes de seleccionar sus valores.
+        await listarInstrumentos();
+        await listarUnidades();
+        await listarPersonas();
+
+        // Completar los campos del formulario.
+        const campos: [string, any][] = [
+            ["codigo", convenio.codigo],
+            ["titulo", convenio.titulo],
+            ["tipo", convenio.id_tipo_instrumento],
+            ["unidad-responsable", convenio.id_unidad],
+            ["objeto", convenio.objeto],
+            ["alcance", convenio.alcance],
+            ["obligaciones", convenio.obligaciones],
+            ["condiciones-rescision", convenio.rescision],
+            ["marco-legal", convenio.marco_legal],
+            ["resolucion", convenio.resolucion],
+            ["expediente", convenio.expediente_referencia],
+            ["condiciones-renovacion", convenio.condiciones_renovacion],
+            ["confidencialidad", convenio.confidencialidad],
+            ["notas-adicionales", convenio.notas],
+            ["fecha-firma", convenio.fecha_firma],
+            ["fecha-inicio", convenio.fecha_inicio],
+            ["fecha-vencimiento", convenio.fecha_vencimiento],
+            ["plazo-preaviso", convenio.plazo_preaviso]
+        ];
+
+        for (let i = 0; i < campos.length; i++) {
+            let elemento = document.getElementById(campos[i][0]) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+
+            if (elemento) {
+                elemento.value = campos[i][1] == null
+                    ? ""
+                    : String(campos[i][1]).substring(0, campos[i][0].startsWith("fecha-") ? 10 : undefined);
+            }
+        }
+
+        const modal = document.getElementById("ventanaRegistro") as HTMLDialogElement;
         modal.showModal();
     }
 
@@ -349,6 +411,58 @@ if (abrir != null)
             datos.append(opcionales[i][0], texto);
     }
 
+    // Si estamos editando un convenio existente
+    if (idConvenioEditando !== null) {
+
+        let datosActualizados = {
+            version: versionConvenioEditando,
+            codigo: valor("codigo"),
+            titulo: valor("titulo"),
+            id_tipo_instrumento: Number(valor("tipo")),
+            id_unidad: Number(valor("unidad-responsable")),
+            objeto: valor("objeto"),
+            alcance: valor("alcance"),
+            obligaciones: valor("obligaciones"),
+            rescision: valor("condiciones-rescision"),
+            marco_legal: valor("marco-legal"),
+            resolucion: valor("resolucion"),
+            expediente_referencia: valor("expediente"),
+            condiciones_renovacion: valor("condiciones-renovacion"),
+            confidencialidad: valor("confidencialidad"),
+            notas: valor("notas-adicionales"),
+            fecha_firma: valor("fecha-firma") || null,
+            fecha_inicio: valor("fecha-inicio") || null,
+            fecha_vencimiento: valor("fecha-vencimiento") || null,
+            plazo_preaviso: valor("plazo-preaviso") === ""
+                ? null
+                : Number(valor("plazo-preaviso"))
+        };
+
+        let respuesta = await actualizarConvenio(
+            idConvenioEditando,
+            datosActualizados
+        );
+
+        if (respuesta.data == null) {
+            let mensaje = respuesta.errors
+                ? Object.values(respuesta.errors).join("\n")
+                : (respuesta.mensaje ?? respuesta.message ?? "No se pudo actualizar el convenio.");
+
+            alert(mensaje);
+            return;
+        }
+
+        alert("Convenio actualizado correctamente.");
+
+        setIdConvenioEditando(null);
+        setVersionConvenioEditando(null);
+
+        cerrarModal();
+        listarConvenios(1);
+        return;
+    }
+
+    // Si no estamos editando, continúa el registro normal
     let respuesta = await registrar(datos);
 
     if (respuesta.data == null){
@@ -537,13 +651,22 @@ if (abrir != null)
             <td>${conveniosPagina[i].tipo_instrumento?.nombre ?? "Sin tipo"}</td>
             <td>${conveniosPagina[i].unidad?.nombre ?? "Sin unidad"}</td>
             <td>${conveniosPagina[i].estado?.nombre ?? "Sin estado"}</td>
-            <td>
+            <td class="d-flex gap-2">
                 <button
                     type="button"
                     class="btn btn-info btn-detalles"
                     data-id="${conveniosPagina[i].id_instrumento}">
                     VER DETALLES
                 </button>
+
+                ${normalizar(String(conveniosPagina[i].estado?.nombre ?? "")) === "borrador" ? `
+                    <button
+                        type="button"
+                        class="btn btn-warning btn-editar"
+                        data-id="${conveniosPagina[i].id_instrumento}">
+                        EDITAR
+                    </button>
+                ` : ""}
             </td>
         </tr>
         `;
@@ -571,6 +694,15 @@ if (abrir != null)
             ${paginaValida >= totalPaginas ? "disabled" : ""}>Siguiente</button>
     </div>
     `;
+
+    resultados.querySelectorAll(".btn-editar").forEach((boton) => {
+        boton.addEventListener("click", () => {
+            let id = boton.getAttribute("data-id");
+
+            if (id != null)
+                editarConvenio(id);
+        });
+    });
 
     resultados.querySelectorAll(".btn-detalles").forEach((boton) => {
         boton.addEventListener("click", () => {
@@ -694,7 +826,9 @@ if (abrir != null)
                                 <option value="otro">Otro</option>
                             </select>
                         </form>
-                        <button className="btn btn-secondary" onClick={registrarConvenio}>Registrar convenio</button>
+                        <button className="btn btn-secondary" type="button" onClick={registrarConvenio}>
+                            {idConvenioEditando !== null ? "Guardar cambios" : "Registrar convenio"}
+                        </button>
                 </dialog>
                 <div className="d-flex flex-column gap-3">
                     <form className="d-flex flex-column border rounded">

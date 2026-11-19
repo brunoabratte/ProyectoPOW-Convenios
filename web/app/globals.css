@@ -36,11 +36,13 @@ button, input, select, textarea {
 }
 
 .logoConvenios {
-    height: 80px;
-    width: auto;
+    height: 100px;
+    width: 100px;
     max-width: 75%;
     object-fit: contain;
     padding: 10px;
+    background-color: white;
+    border-radius: 50%;
 }
 
 .logoCuenta {
