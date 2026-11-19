@@ -25,12 +25,13 @@ export default function ConveniosPage(){
         verificarSesion();
         listarInstrumentos();
         listarUnidades();
+        listarInstitucionesSelect();
         listarConvenios(1);
+
         let parametros = new URLSearchParams(window.location.search);
         let abrir = parametros.get("abrir");
-
-if (abrir != null)
-    abrirDetalles(abrir);
+        if (abrir != null)
+            abrirDetalles(abrir);
     }, []);
 
     async function abrirModal() {
@@ -110,6 +111,64 @@ if (abrir != null)
             .replace(/[\u0300-\u036f]/g, "")
             .replace(/[-\s]/g, "_");
     }
+
+    let listaInstituciones: any[] = [];
+
+function armarOpcionesInstituciones(textoPlaceholder: string) {
+    let html = `<option value="">${textoPlaceholder}</option>`;
+    for (let i = 0; i < listaInstituciones.length; i++) {
+        let inst = listaInstituciones[i];
+        html += `<option value="${inst.id_institucion}">${inst.nombre}</option>`;
+    }
+    return html;
+}
+
+async function listarInstitucionesSelect() {
+    let datos = await obtenerInstituciones();
+
+    if (!datos || !Array.isArray(datos.data))
+        return;
+
+    listaInstituciones = datos.data;
+
+    let selects = document.querySelectorAll<HTMLSelectElement>("#contenedor-instituciones .institucion-select");
+    selects.forEach((select, indice) => {
+        let valorPrevio = select.value;
+        select.innerHTML = armarOpcionesInstituciones(`Seleccione institución (Parte ${indice + 1})...`);
+        if (valorPrevio !== "")
+            select.value = valorPrevio;
+    });
+}
+
+async function agregarParteFirmante() {
+    let contenedor = document.getElementById("contenedor-instituciones");
+    if (!contenedor)
+        return;
+
+    if (listaInstituciones.length === 0)
+        await listarInstitucionesSelect();
+
+    let cantidadActual = contenedor.querySelectorAll(".institucion-select").length;
+
+    let fila = document.createElement("div");
+    fila.className = "d-flex gap-2 align-items-center fila-institucion-extra";
+
+    let nuevoSelect = document.createElement("select");
+    nuevoSelect.className = "form-select border rounded institucion-select";
+    nuevoSelect.innerHTML = armarOpcionesInstituciones(`Seleccione institución (Parte ${cantidadActual + 1})...`);
+
+    let btnQuitar = document.createElement("button");
+    btnQuitar.type = "button";
+    btnQuitar.className = "btn btn-outline-danger btn-sm";
+    btnQuitar.textContent = "Quitar";
+    btnQuitar.addEventListener("click", () => {
+        fila.remove();
+    });
+
+    fila.appendChild(nuevoSelect);
+    fila.appendChild(btnQuitar);
+    contenedor.appendChild(fila);
+}
 
     async function listarPersonas(){
         let personas = document.getElementById("personas") as HTMLSelectElement | null;
@@ -357,13 +416,16 @@ if (abrir != null)
 
     async function registrarConvenio(){
     // 1. Validaciones antes de enviar nada
-    if (valor("codigo") === "" || valor("titulo") === "" || valor("tipo") === "" || valor("unidad-responsable") === ""){
-        alert("Completá código, título, tipo de instrumento y unidad responsable.");
-        return;
-    }
+    // 1. Validación (reemplaza la comparación entre primera-institucion y segunda-institucion)
+    let selectsInstituciones = Array.from(
+        document.querySelectorAll<HTMLSelectElement>("#contenedor-instituciones .institucion-select")
+    );
+    let institucionesSeleccionadas = selectsInstituciones
+        .map((s) => s.value)
+        .filter((v) => v !== "");
 
-    if (valor("primera-institucion") !== "" && valor("primera-institucion") === valor("segunda-institucion")){
-        alert("Las dos partes deben ser instituciones distintas.");
+    if (new Set(institucionesSeleccionadas).size !== institucionesSeleccionadas.length) {
+        alert("Las instituciones firmantes deben ser distintas entre sí.");
         return;
     }
 
@@ -517,16 +579,13 @@ if (abrir != null)
     }
 
     // 3. Partes (instituciones firmantes)
-    let instituciones = [valor("primera-institucion"), valor("segunda-institucion")];
+    const nombresCaracter = ["Primera parte", "Segunda parte", "Tercera parte", "Cuarta parte", "Quinta parte"];
 
-    for (let i = 0; i < instituciones.length; i++){
-        if (instituciones[i] === "")
-            continue;
-
+    for (let i = 0; i < institucionesSeleccionadas.length; i++) {
         let parte = new FormData();
         parte.append("id_instrumento", idInstrumento);
-        parte.append("id_institucion", instituciones[i]);
-        parte.append("caracter_parte", i === 0 ? "Primera parte" : "Segunda parte");
+        parte.append("id_institucion", institucionesSeleccionadas[i]);
+        parte.append("caracter_parte", nombresCaracter[i] ?? `Parte ${i + 1}`);
 
         let resParte = await registrarParte(parte);
         if (resParte.datos == null)
@@ -782,19 +841,21 @@ if (abrir != null)
 
                         <h4 className="titulo h4">4. Partes e instituciones</h4>
 
-                        <form className="d-flex flex-column gap-3 mb-5">
+                        <form className="d-flex flex-column gap-3 mb-5" onSubmit={(e) => e.preventDefault()}>
                             <h5 className="titulo h5">Instituciones firmantes</h5>
-                            <select id="primera-institucion" name="primera_institucion" className="form-select border rounded" defaultValue="1">
-                                <option value="1">Universidad Nacional de La Pampa</option>
-                                <option value="2">Instituto Pampeano de Innovacion</option>
-                                <option value="3">Empresa Tecnológica Horizonte</option>
-                            </select>
-                            <select id="segunda-institucion" name="segunda_institucion" className="form-select border rounded" defaultValue="2">
-                                <option value="1">Universidad Nacional de La Pampa</option>
-                                <option value="2">Instituto Pampeano de Innovacion</option>
-                                <option value="3">Empresa Tecnológica Horizonte</option>
-                            </select>
-                            <button type="button" className="btn btn-secondary">Agregar nueva institucion</button>
+
+                            <div id="contenedor-instituciones" className="d-flex flex-column gap-2">
+                                <select id="primera-institucion" name="primera_institucion" className="form-select border rounded institucion-select" defaultValue="">
+                                    <option value="">Seleccione institución (Parte 1)...</option>
+                                </select>
+                                <select id="segunda-institucion" name="segunda_institucion" className="form-select border rounded institucion-select" defaultValue="">
+                                    <option value="">Seleccione institución (Parte 2)...</option>
+                                </select>
+                            </div>
+
+                            <button type="button" className="btn btn-secondary" onClick={agregarParteFirmante}>
+                                Agregar nueva institucion
+                            </button>
                         </form>
 
                         <h4 className="titulo h4">5. Relaciones</h4>
